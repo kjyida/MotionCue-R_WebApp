@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="20260927-1914">
+<meta name="build" content="20260927-2013">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>MotionCue-R 테스터</title>
 <style>
@@ -390,7 +390,7 @@
   <button data-p="dev" onclick="tab('dev')"><span class="ni">🔧</span>개발</button>
 </nav>
 
-<script src="asym_engine.js?v=20260927-1914"></script>
+<script src="asym_engine.js?v=20260927-2013"></script>
 <script>
 // ===================== BLE 계층 =====================
 const UUID = {
@@ -1155,7 +1155,7 @@ window.LG={ on:false, db:null, pending:[], ori:{t:[],v:[]}, raw:{t:[],v:[]}, nOr
     const q=this.pending; this.pending=[]; for(const e of q) this.add('events', e).catch(()=>{}); return this.db; },
   _tx(store, mode, fn){ return this.open().then(d=>new Promise((res,rej)=>{ const tx=d.transaction(store,mode), st=tx.objectStore(store); const rq=fn(st); tx.oncomplete=()=>res(rq&&rq.result); tx.onerror=()=>rej(tx.error); tx.onabort=()=>rej(tx.error); })); },
   add(store, val){ return this._tx(store,'readwrite', st=>st.add(val)); }, all(store){ return this._tx(store,'readonly', st=>st.getAll()); }, count(store){ return this._tx(store,'readonly', st=>st.count()); }, clearStore(store){ return this._tx(store,'readwrite', st=>st.clear()); },
-  event(kind, data){ const rec={t:+performance.now().toFixed(1), wall:Date.now(), kind, data:(data==null? null : data)}; if(!this.db){ this.pending.push(rec); if(this.pending.length>500) this.pending.shift(); return; } this.add('events', rec).catch(()=>{}); },
+  event(kind, data){ const rec={t:+performance.now().toFixed(1), wall:Date.now(), origin:performance.timeOrigin, kind, data:(data==null? null : data)}; if(!this.db){ this.pending.push(rec); if(this.pending.length>500) this.pending.shift(); return; } this.add('events', rec).catch(()=>{}); },
   hz(o,i){ this.hzAcc.push([o,i]); if(this.hzAcc.length>=5){ const a=this.hzAcc; this.hzAcc=[]; if(a.some(x=>x[0]||x[1])) this.event('hz',{o:a.map(x=>x[0]), i:a.map(x=>x[1])}); } },
   toggle(){ this.on? this.stop() : this.start(); },
   async start(){ try{ await this.open(); }catch(e){ alert('저장소 열기 실패: '+e.message); return; } this.on=true; this.t0=performance.now(); this.lastFlush=this.t0; this.nOri=0; this.nRaw=0; this.awake('logger', true);
@@ -1164,7 +1164,7 @@ window.LG={ on:false, db:null, pending:[], ori:{t:[],v:[]}, raw:{t:[],v:[]}, nOr
   pushOri(t, o){ const q=o.q||[1,0,0,0]; this.ori.t.push(t); this.ori.v.push(o.roll||0, o.pitch||0, o.yaw||0, o.lean||0, q[0],q[1],q[2],q[3]); this.nOri++; if(t-this.lastFlush>=5000) this.flush(false); },
   pushRaw(t, g, a){ this.raw.t.push(t); this.raw.v.push(g[0],g[1],g[2],a[0],a[1],a[2]); this.nRaw++; },
   async flush(force){ if(this.flushing) return; this.flushing=true; try{ this.lastFlush=performance.now();
-      for(const [kind,buf,w] of [['ori',this.ori,8],['raw',this.raw,6]]){ const n=buf.t.length; if(!n) continue; const rec={kind, t0:buf.t[0], t1:buf.t[n-1], n, w, wall:Date.now(), t:new Float64Array(buf.t), v:new Float32Array(buf.v)}; buf.t=[]; buf.v=[]; this.bytes+=n*(8+4*w); await this.add('chunks', rec); }
+      for(const [kind,buf,w] of [['ori',this.ori,8],['raw',this.raw,6]]){ const n=buf.t.length; if(!n) continue; const rec={kind, t0:buf.t[0], t1:buf.t[n-1], n, w, wall:Date.now(), origin:performance.timeOrigin, t:new Float64Array(buf.t), v:new Float32Array(buf.v)}; buf.t=[]; buf.v=[]; this.bytes+=n*(8+4*w); await this.add('chunks', rec); }
     }catch(e){ console.error(e); log('로거 저장 실패: '+e.message,'er'); } finally{ this.flushing=false; if(this.on||force) this.ui(); } },
   tagStart(label){ const now=performance.now(); if(this.tag){ this.event('tag',{label:this.tag.label, action:'end'}); } this.tag={label, t:now}; this.event('tag',{label, action:'start'}); log('태그 시작: '+label,'tx'); this.ui(); },
   tagEnd(){ if(!this.tag) return; this.event('tag',{label:this.tag.label, action:'end'}); log('태그 끝: '+this.tag.label,'tx'); this.tag=null; this.ui(); },
@@ -1185,16 +1185,19 @@ window.LG={ on:false, db:null, pending:[], ori:{t:[],v:[]}, raw:{t:[],v:[]}, nOr
     set('lgBuild', APP_BUILD); set('lgEngine', MC.ENGINE_VER); set('buildTxt', APP_BUILD+' · '+MC.ENGINE_VER); this.sizeUi(); },
   async sizeUi(){ try{ const nC=await this.count('chunks'), nE=await this.count('events'); let est=''; if(navigator.storage&&navigator.storage.estimate){ const q=await navigator.storage.estimate(); est=' · 저장소 사용 '+((q.usage||0)/1048576).toFixed(1)+' MB'; } set('lgSize', `청크 ${nC} · 이벤트 ${nE} · 이번 기록 ${(this.bytes/1048576).toFixed(1)} MB${est}`); }catch(e){} },
   settingsSnapshot(){ const o={}; document.querySelectorAll('#p-set input, #p-set select').forEach(el=>{ if(el.id) o[el.id]=(el.type==='checkbox'? el.checked : el.value); }); return o; },
-  async build(){ const chunks=await this.all('chunks'); chunks.sort((a,b)=>a.t0-b.t0 || (a.kind<b.kind?-1:1)); const segs=[]; let cur=null;
+  // 페이지를 다시 열면 performance.now() 의 원점이 바뀌므로, 저장된 레코드의 페이지 시각원점(origin; 구버전 레코드는 wall 로 근사)을 내보내는 페이지의 원점에 맞춰 시간축을 하나로 만든다
+  _off(rec, tRef){ const o0=performance.timeOrigin, org=(rec.origin!=null)? rec.origin : (rec.wall-tRef), off=org-o0; return ((rec.origin!=null)? off!==0 : Math.abs(off)>10000)? off : 0; },
+  async build(){ const chunks=await this.all('chunks'); for(const c of chunks){ c.off=this._off(c, c.t1); c.t0+=c.off; c.t1+=c.off; }
+    chunks.sort((a,b)=>a.t0-b.t0 || (a.kind<b.kind?-1:1)); const segs=[]; let cur=null;
     for(const c of chunks){ if(!cur || c.t0-cur.t1>2000){ cur={t0:c.t0, t1:c.t1, ori:[], raw:[]}; segs.push(cur); } cur.t1=Math.max(cur.t1, c.t1);
-      const dst=cur[c.kind], w=c.w; for(let i=0;i<c.n;i++){ const row=[+c.t[i].toFixed(1)]; for(let k=0;k<w;k++) row.push(+c.v[i*w+k].toFixed(k>=(w===8?4:0)? 4 : 3)); dst.push(row); } }
+      const dst=cur[c.kind], w=c.w; for(let i=0;i<c.n;i++){ const row=[+(c.t[i]+c.off).toFixed(1)]; for(let k=0;k<w;k++) row.push(+c.v[i*w+k].toFixed(k>=(w===8?4:0)? 4 : 3)); dst.push(row); } }
     for(const sg of segs){ sg.ori.sort((a,b)=>a[0]-b[0]); sg.raw.sort((a,b)=>a[0]-b[0]); }
     return segs; },
   async exportLog(share){ try{ log('로그 내보내기 준비…','tx'); if(this.on) await this.flush(true); const segs=await this.build(); const events=await this.all('events');
       const o={schema:'mclog/1', exportedAt:new Date().toISOString(), app:{build:APP_BUILD, engine:MC.ENGINE_VER, ua:navigator.userAgent, url:location.href, perfOrigin:performance.timeOrigin}, device:{name:devId()},
         settings:this.settingsSnapshot(), gateOverride:tuneOver, leanAxis:leanAxis.slice(), signFlip:!!cfg.signFlip, bias:raw.bias.slice(), metric:cfg.metric,
         oriCols:['t','roll','pitch','yaw','lean','qw','qx','qy','qz'], rawCols:['t','gx','gy','gz','ax','ay','az'],
-        events:events.map(e=>({t:e.t, wall:e.wall, kind:e.kind, data:e.data})), segments:segs,
+        events:events.map(e=>({t:+(e.t+this._off(e, e.t)).toFixed(1), wall:e.wall, kind:e.kind, data:e.data})).sort((a,b)=>a.wall-b.wall), segments:segs,
         captures:captures.map(c=>({id:c.id, date:c.date, metric:c.metric, winSec:c.winSec, marks:c.marks, windows:c.windows, expected:c.expected, durSec:c.durSec, note:c.note, mode:c.mode}))};
       const json=JSON.stringify(o); let blob=new Blob([json],{type:'application/json'}); const d=new Date(), pad=n=>String(n).padStart(2,'0');
       let name='mclog_'+devId()+'_'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes())+'.json';
