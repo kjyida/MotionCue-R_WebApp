@@ -1,0 +1,1304 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="build" content="20260927-1914">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>MotionCue-R 테스터</title>
+<style>
+  :root{
+    --bg:#0e1116; --card:#1a1f28; --card2:#232a35; --line:#2c3543;
+    --tx:#e8edf4; --tx2:#9aa7b8; --pri:#4c8dff; --pri-d:#2f6fe0;
+    --ok:#37d67a; --warn:#ffb020; --bad:#ff5c5c; --acc:#8b5cf6;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; height:100%}
+  body{background:var(--bg); color:var(--tx); font:14px/1.5 -apple-system,"Segoe UI","Malgun Gothic",sans-serif;
+       max-width:520px; margin:0 auto; display:flex; flex-direction:column; min-height:100%}
+  header{position:sticky; top:0; z-index:20; background:linear-gradient(180deg,#141922,#0e1116);
+         padding:12px 16px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px}
+  header .logo{font-weight:800; letter-spacing:.5px; font-size:16px}
+  header .logo b{color:var(--pri)}
+  header .grow{flex:1}
+  .pill{font-size:12px; padding:4px 10px; border-radius:999px; background:var(--card2); color:var(--tx2); display:flex; align-items:center; gap:6px}
+  .dot{width:8px; height:8px; border-radius:50%; background:var(--bad)}
+  .dot.on{background:var(--ok); box-shadow:0 0 8px var(--ok)}
+  .bat{font-variant-numeric:tabular-nums}
+  main{flex:1; padding:14px 14px 84px; overflow-y:auto}
+  .panel{display:none; animation:fade .18s} .panel.active{display:block}
+  @keyframes fade{from{opacity:0; transform:translateY(4px)}to{opacity:1}}
+  h2{font-size:17px; margin:2px 0 12px} h3{font-size:14px; color:var(--tx2); margin:18px 0 8px; font-weight:600}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:12px}
+  .row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:7px 0}
+  .row+.row{border-top:1px solid var(--line)}
+  .lbl{color:var(--tx2)} .val{font-weight:600; font-variant-numeric:tabular-nums}
+  button{font:inherit; cursor:pointer; border:none; border-radius:10px; padding:11px 14px; color:#fff; background:var(--card2)}
+  .btn-p{background:var(--pri)} .btn-p:active{background:var(--pri-d)}
+  .btn-g{background:#2a3341; color:var(--tx)}
+  .btn-bad{background:var(--bad)} .btn-ok{background:var(--ok); color:#062}
+  button:disabled{opacity:.45}
+  .full{width:100%} .mt{margin-top:10px} .g8{display:flex; gap:8px} .g8>*{flex:1}
+  .tagrow{display:flex; flex-wrap:wrap; gap:6px} .tagrow button{width:auto; padding:9px 13px; font-size:13px; background:#2a3341; color:var(--tx); border-radius:8px} .tagrow button.on{background:var(--pri)} .tagrow button.end{background:#5b2a2a}
+  .mini{display:inline-block; width:auto; padding:2px 9px; font-size:12px; line-height:1.3; background:#2a3341; color:var(--tx); border-radius:6px; margin:0 1px; vertical-align:middle; border:1px solid var(--line)}
+  .tgrid{display:grid; grid-template-columns:repeat(auto-fill, minmax(170px,1fr)); gap:6px 10px; margin-top:8px}
+  .tgrid label{display:flex; justify-content:space-between; align-items:center; gap:6px; font-size:12px; color:#aab3c0}
+  .tgrid input{width:70px; padding:3px 6px; font-size:12px}
+  .ttab{width:100%; border-collapse:collapse; font-size:12px} .ttab th,.ttab td{padding:3px 6px; text-align:right; border-bottom:1px solid var(--line); white-space:nowrap}
+  .ttab th{color:#8a93a3; font-weight:600; position:sticky; top:0; background:var(--card)} .ttab tr{cursor:pointer} .ttab tr.sel td{background:rgba(76,141,255,0.15)}
+  input[type=number]{width:84px; background:var(--card2); border:1px solid var(--line); color:var(--tx); border-radius:8px; padding:8px; font:inherit; text-align:right}
+  select{background:var(--card2); border:1px solid var(--line); color:var(--tx); border-radius:8px; padding:8px; font:inherit}
+  .seg{display:flex; background:var(--card2); border-radius:10px; padding:3px; gap:3px}
+  .seg button{flex:1; background:transparent; color:var(--tx2); padding:8px; border-radius:8px}
+  .seg button.sel{background:var(--pri); color:#fff}
+  .switch{position:relative; width:46px; height:26px; background:var(--card2); border-radius:999px; border:1px solid var(--line); transition:.15s}
+  .switch.on{background:var(--pri); border-color:var(--pri)}
+  .switch::after{content:""; position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:#fff; transition:.15s}
+  .switch.on::after{left:22px}
+  /* orientation gauge */
+  .ori{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; text-align:center}
+  .ori .b{background:var(--card2); border-radius:10px; padding:10px 6px}
+  .ori .b .n{font-size:11px; color:var(--tx2)} .ori .b .v{font-size:20px; font-weight:700; font-variant-numeric:tabular-nums}
+  /* protocol state */
+  .state{font-size:22px; font-weight:800; text-align:center; padding:14px; border-radius:14px; background:var(--card2)}
+  .state small{display:block; font-size:12px; color:var(--tx2); font-weight:500; margin-top:4px}
+  .timer{font-size:40px; font-weight:800; text-align:center; font-variant-numeric:tabular-nums; margin:6px 0}
+  .bar{height:8px; background:var(--card2); border-radius:999px; overflow:hidden}
+  .bar>i{display:block; height:100%; background:var(--pri); width:0; transition:width .25s}
+  .asym{display:flex; align-items:center; gap:12px}
+  .asym .lr{flex:1; height:34px; background:var(--card2); border-radius:8px; position:relative; overflow:hidden}
+  .asym .lr .mid{position:absolute; left:50%; top:0; bottom:0; width:2px; background:var(--line)}
+  .asym .lr .fill{position:absolute; top:4px; bottom:4px; background:var(--acc); border-radius:4px; transition:.2s}
+  .bodymap{display:flex; justify-content:center; gap:26px; margin:8px 0}
+  .vib{width:64px; height:120px; border-radius:14px; background:var(--card2); border:2px solid var(--line); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; color:var(--tx2); font-size:12px}
+  .vib.act{border-color:var(--acc); color:var(--tx); box-shadow:0 0 16px rgba(139,92,246,.5)}
+  .vib .ico{font-size:26px}
+  .log{background:#0a0d12; border:1px solid var(--line); border-radius:10px; padding:8px; height:180px; overflow-y:auto; font:11px/1.5 ui-monospace,Consolas,monospace; white-space:pre-wrap; color:#b8c4d4}
+  .log .tx{color:#7fb2ff} .log .rx{color:#8be89b} .log .er{color:#ff8b8b}
+  .hint{font-size:12px; color:var(--tx2); margin:4px 0}
+  .tag{font-size:10px; padding:2px 6px; border-radius:6px; background:var(--warn); color:#3a2a00; font-weight:700}
+  nav{position:fixed; bottom:0; left:0; right:0; max-width:520px; margin:0 auto; background:#131822; border-top:1px solid var(--line);
+      display:grid; grid-template-columns:repeat(5,1fr); z-index:20}
+  nav button{background:none; color:var(--tx2); padding:8px 0 10px; border-radius:0; display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11px}
+  nav button.sel{color:var(--pri)} nav .ni{font-size:20px}
+  .estop-banner{display:none; position:sticky; top:0; z-index:30; background:var(--bad); color:#fff; padding:10px 14px;
+      align-items:center; gap:10px; font-weight:700; box-shadow:0 4px 14px rgba(255,92,92,.4)}
+  .estop-banner.show{display:flex}
+  .estop-banner button{margin-left:auto; background:#fff; color:var(--bad); padding:7px 14px; font-weight:800}
+  .btn-estop{background:var(--bad); font-weight:800; letter-spacing:.5px}
+  canvas.chart{width:100%; height:230px; background:#0a0d12; border:1px solid var(--line); border-radius:10px; display:block}
+  .chk{display:flex; align-items:center; gap:8px; font-size:13px; color:#8a93a3; cursor:pointer}
+  .chk input{width:16px; height:16px}
+  .chartwrap{position:relative}
+  .tip{position:absolute; pointer-events:none; background:#1b2230; border:1px solid #3a4553; color:#e8ecf1;
+       font-size:12px; font-weight:700; padding:3px 7px; border-radius:6px; transform:translate(-50%,-135%);
+       white-space:nowrap; z-index:5; box-shadow:0 2px 6px rgba(0,0,0,.4)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Motion<b>Cue</b>-R</div>
+  <div class="grow"></div>
+  <div class="pill bat"><span id="batTxt">–%</span> 🔋</div>
+  <div class="pill"><span class="dot" id="cdot"></span><span id="cName">미연결</span></div>
+</header>
+
+<div class="estop-banner" id="estopBanner">🛑 긴급정지됨 — 진동 중단 (다시 시작하려면 러닝/자극을 재시작)<button onclick="hideEstop()">닫기</button></div>
+<main>
+  <!-- ============ 연결 ============ -->
+  <section class="panel active" id="p-conn">
+    <h2>연결</h2>
+    <div class="card">
+      <p class="hint">Chrome/Edge(데스크톱·안드로이드)에서 동작합니다. 장치 전원을 켜고 연결하세요.</p>
+      <button class="btn-p full" id="connBtn" onclick="toggleConn()">🔗 MotionCue 연결</button>
+      <div class="row mt"><span class="lbl">수신 · 러닝감지(가속도)</span><span class="val" style="font-size:12px">자세 <span id="oHz">0</span> Hz · raw <span id="iHz">0</span> Hz · <b id="runLive">–</b></span></div>
+      <div class="hint">둘 다 약 50 Hz 여야 정상(raw 0 이면 원시 IMU 구독 실패). 러닝감지는 |a| 표준편차(g)·스텝 spm·주기성으로 표시. 빌드 <span id="buildTxt">–</span></div>
+    </div>
+    <div class="card" id="devCard" style="display:none">
+      <div class="row"><span class="lbl">장치명</span><span class="val" id="dvName">–</span></div>
+      <div class="row"><span class="lbl">제조사</span><span class="val" id="dvMfr">–</span></div>
+      <div class="row"><span class="lbl">모델</span><span class="val" id="dvModel">–</span></div>
+      <div class="row"><span class="lbl">펌웨어</span><span class="val" id="dvFw">–</span></div>
+      <div class="row"><span class="lbl">배터리</span><span class="val" id="dvBat">–</span></div>
+      <div class="row"><span class="lbl">융합 알고리즘</span><span class="val" id="dvAlgo">–</span></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">사람기준 roll (lean) <span class="tag">판정용</span></h3>
+      <div class="row"><span class="lbl">좌우 기울기 (중력·마운트無관)</span><span class="val" id="oLean" style="font-size:22px; color:#4c8dff">–°</span></div>
+      <button class="btn-g full mt" onclick="leanZero()">🧍 지금 자세를 0으로 (서기 영점)</button>
+      <div class="hint mt">이 값이 판정 기준입니다. 서서 영점 후 <b>좌우로 기울일 때만</b> 깨끗이 변해야 정상. 안 변하거나 수직회전(yaw)에 반응하면 <b>설정 → 전방축(X/Y/Z)</b>을 바꿔보세요.</div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">기기 오일러 (참고) <span class="tag">수직마운트=짐벌락</span></h3>
+      <div class="ori">
+        <div class="b"><div class="n">ROLL</div><div class="v" id="oRoll">–</div></div>
+        <div class="b"><div class="n">PITCH</div><div class="v" id="oPitch">–</div></div>
+        <div class="b"><div class="n">YAW</div><div class="v" id="oYaw">–</div></div>
+      </div>
+      <div class="hint mt">⚠️ 수직 마운트에선 오일러가 서로 얽히고(짐벌락) 크기도 왜곡 — <b>판정엔 쓰지 마세요</b>. 기기 정지판정 <span id="statTxt">–</span></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">센서 3D 자세 <span class="tag">융합 쿼터니언</span></h3>
+      <canvas class="chart" id="att3d" style="height:280px"></canvas>
+      <div class="row mt"><span class="lbl">USB 위치 (표시용)</span>
+        <select id="usbPos"><option value="-x">−X 변</option><option value="+x" selected>+X 변</option><option value="-y">−Y 변</option><option value="+y">+Y 변</option></select>
+      </div>
+      <div class="hint mt">펌웨어 쿼터니언(센서→월드)으로 보드를 회전해 그립니다. 파란 면=윗면(+Z 법선), 축 X빨강·Y초록·Z파랑, 회색 격자=지면, ↑=중력 반대. 마운트 보정(0x12)이 켜져 있으면 그 회전이 반영된 프레임입니다.</div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">실시간 신호 <span class="tag">최근 <span id="chWin">12</span>초</span></h3>
+      <canvas class="chart livechart" id="liveChart"></canvas>
+      <div class="row" style="font-size:12px"><span class="lbl">y축 범위 (고정)</span><span class="val" style="font-size:12px">roll ±<span class="chLeanTxt">10</span>° <button class="mini" onclick="chZoom('lean',1)">확대</button><button class="mini" onclick="chZoom('lean',-1)">축소</button> · 각속도 ±<span class="chRateTxt">100</span>°/s <button class="mini" onclick="chZoom('rate',1)">확대</button><button class="mini" onclick="chZoom('rate',-1)">축소</button> <button class="mini" onclick="chAutoToggle()"><span class="chAutoTxt">자동</span></button></span></div>
+      <div class="hint mt">위 <b style="color:#4c8dff">roll·사람기준(°)</b> · 아래 <b style="color:#37d67a">수직축 각속도(dps)</b>(원시 자이로를 중력축에 투영, raw 없으면 오일러 폴백). 좌우 스텝 진동·비대칭을 눈으로 확인. 점선=0.</div>
+      <label class="chk mt"><input type="checkbox" id="chDetrend" checked> 추세제거(드리프트 보정) 표시</label>
+    </div>
+  </section>
+
+  <!-- ============ 러닝(자동) ============ -->
+  <section class="panel" id="p-run">
+    <h2>러닝 모드 <span class="tag">자동 중재</span></h2>
+    <div class="card">
+      <div class="state" id="rState">대기<small id="rStateSub">시작을 누르면 3초 서기(영점·bias) 후 평가합니다</small></div>
+      <div class="timer" id="rTimer">–</div>
+      <div class="bar"><i id="rBar"></i></div>
+      <div class="g8 mt">
+        <button class="btn-p" id="runStart" onclick="runStart()">▶ 러닝 시작</button>
+        <button class="btn-bad" id="runStop" onclick="runStop()" disabled>■ 정지</button>
+      </div>
+      <button class="btn-estop full mt" onclick="estop()">🛑 긴급정지 (E-STOP)</button>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">실시간 신호 <span class="tag">최근 12초</span></h3>
+      <canvas class="chart livechart" id="liveChart2"></canvas>
+      <div class="row" style="font-size:12px"><span class="lbl">y축 범위 (고정)</span><span class="val" style="font-size:12px">roll ±<span class="chLeanTxt">10</span>° <button class="mini" onclick="chZoom('lean',1)">확대</button><button class="mini" onclick="chZoom('lean',-1)">축소</button> · 각속도 ±<span class="chRateTxt">100</span>°/s <button class="mini" onclick="chZoom('rate',1)">확대</button><button class="mini" onclick="chZoom('rate',-1)">축소</button> <button class="mini" onclick="chAutoToggle()"><span class="chAutoTxt">자동</span></button></span></div>
+      <div class="hint mt">위 <b style="color:#4c8dff">roll·사람기준(°)</b> · 아래 <b style="color:#37d67a">수직축 각속도(dps)</b>. 표시 옵션(추세제거)은 연결 탭과 공유.</div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">비대칭 (좌 ↔ 우)</h3>
+      <div class="asym">
+        <span class="val" id="asymL" style="width:34px; text-align:center">L</span>
+        <div class="lr"><div class="mid"></div><div class="fill" id="asymFill"></div></div>
+        <span class="val" id="asymR" style="width:34px; text-align:center">R</span>
+      </div>
+      <div class="row"><span class="lbl">비대칭 지수 (지표 <span id="metricName">yaw_rate</span>) · 고조파비 <span id="harmE">–</span></span><span class="val" id="asymPct">–</span></div>
+      <div class="row"><span class="lbl">검출된 큰 쪽</span><span class="val" id="asymSide">–</span></div>
+      <div class="row"><span class="lbl">평균 편향(자세) · 로브 쌍</span><span class="val"><span id="meanOff">–</span> · <span id="pairTxt">–</span></span></div>
+      <div class="row"><span class="lbl">케이던스 / 러닝</span><span class="val"><span id="cadence">–</span> · <span id="runGate">–</span></span></div>
+      <div class="hint">검출 창(<span id="hWin">15</span>s) 동안 좌/우 로브 짝 SI 평가(평균 제거한 진동 기준 · 한쪽으로 치우친 자세는 "평균 편향"에 별도 표시). 러닝 여부는 가속도(|a|)로 판정, 아니면 대기. 고조파비(2f0/f0)는 진단용. <span class="tag">임계 잠정</span></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">기준 측정 <span class="tag">사전 baseline</span></h3>
+      <div class="hint">평소(대칭) 러닝에서 한 번 측정해 두면 이후 세션은 이 기준에서 벗어난 정도(|Δ| &gt; max(2σ, 5%p), 2창 연속)로 판정합니다. 서기 3초 후 창을 연속 반복하며 집계(진동 없음). ok 창 <span id="baseMin">8</span>개 이상 채우고 정지하면 저장됩니다.</div>
+      <div class="g8 mt">
+        <button class="btn-p" id="baseStart" onclick="baseStart()">▶ 기준 측정 시작</button>
+        <button class="btn-bad" id="baseStop" onclick="baseStop()" disabled>■ 정지·저장</button>
+      </div>
+      <div class="row"><span class="lbl">진행</span><span class="val" id="baseProg" style="font-size:12px">–</span></div>
+      <div class="row"><span class="lbl">현재 기준선</span><span class="val" id="thrTxt" style="font-size:12px">없음 — 절대 임계 사용</span></div>
+      <div class="g8 mt">
+        <button class="btn-g" id="baseExport" onclick="baseExport()">⬇ JSON 내보내기</button>
+        <button class="btn-g" id="baseImport" onclick="document.getElementById('baseFile').click()">⬆ JSON 가져오기</button>
+        <button class="btn-g" id="baseClear" onclick="baseClear()">🗑 삭제</button>
+      </div>
+      <input type="file" id="baseFile" accept="application/json,.json" hidden onchange="baseImportFile(this.files[0]); this.value=''">
+      <div class="hint mt" id="baseInfo">기기·지표별로 이 브라우저(localStorage)에 저장됩니다. 다른 기기/브라우저로 옮기려면 JSON 을 사용하세요. 6~8주마다 재측정 권장.</div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">비대칭 분석 스냅샷 <span class="tag" id="snapMeta">–</span></h3>
+      <div class="chartwrap"><canvas class="chart" id="snapChart" style="height:300px"></canvas><div id="snapTip" class="tip" hidden></div></div>
+      <div class="row mt"><span class="lbl">보기</span><span class="val" style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end">
+        <select id="snapSrc" onchange="snapSrcChange()"><option value="live" id="snapLiveOpt">라이브 (최근 15초)</option></select>
+        <select id="snapRange" onchange="renderSnapshot()" disabled><option value="last">최근 창</option></select></span></div>
+      <div class="g8 mt">
+        <button class="btn-g" onclick="renderSnapshot()">📸 분석</button>
+        <button class="btn-g" onclick="downloadSnapJson()">💾 JSON 저장</button>
+        <button class="btn-g" onclick="downloadAsymLog()">⬇ 로그 CSV</button>
+      </div>
+      <div class="hint mt" id="snapTxt">러닝/기준 측정을 <b>시작→정지</b>하면 세션 전체(ori+raw)가 자동 캡처되어 여기 표시됩니다(최근 6개 보관, JSON 저장 가능). "보기"에서 캡처와 구간(세션 전체 / 정지 전 창 / 각 평가 창)을 고르세요. 라이브는 최근 창을 그 자리에서 분석합니다. 위=파형+로브 극값(짝=좌 파랑/우 주황 채움, 제외=회색 속빈, 밝은 띠=불감대, 앞쪽 음영=정지 사전기록, 초록=시작·빨강=정지선), 아래=좌·우 대표값 막대 + 부호있는 SI + 상태/사유. 점에 커서/터치하면 값·역할이 보입니다.</div>
+    </div>
+    <div class="card">
+      <div class="bodymap">
+        <div class="vib" id="vibL"><div class="ico">📳</div><div>좌</div></div>
+        <div class="vib" id="vibR"><div class="ico">📳</div><div>우</div></div>
+      </div>
+      <div class="hint" style="text-align:center">중재 시 해당 부위 진동 (프로토타입: 단일 모터로 구동)</div>
+    </div>
+  </section>
+
+  <!-- ============ 로그(실측 수집) ============ -->
+  <section class="panel" id="p-log">
+    <h2>로그 <span class="tag">실측 수집</span></h2>
+    <div class="card">
+      <div class="row"><span class="lbl">샘플 기록</span><span class="val"><button class="btn-p" id="lgBtn" onclick="LG.toggle()" style="width:auto; padding:9px 18px">● 기록 시작</button></span></div>
+      <div class="row"><span class="lbl">상태</span><span class="val" id="lgStat" style="font-size:12px">대기 (이벤트는 항상 기록)</span></div>
+      <div class="row"><span class="lbl">화면 켜짐 유지</span><span class="val"><button class="mini" id="lgAwake" onclick="LG.toggleAwake()">끔</button> <span id="lgAwakeTxt" style="font-size:12px; color:#8a93a3"></span></span></div>
+      <div class="hint">연결 중 원시 IMU·자세 샘플(50 Hz)을 폰 안(IndexedDB)에 계속 기록합니다. 러닝 시작/정지와 무관하게 서기·걷기·러닝·턴·탭 등 무엇이든 하면서 아래 태그로 구간을 표시하세요. 앱 로그·창 결과·BLE 이벤트·설정 변경·오류는 기록 버튼과 무관하게 항상 남습니다. 기록 중엔 화면이 자동으로 켜져 있습니다(화면이 꺼지면 BLE 가 끊길 수 있음).</div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">활동 태그 <span class="tag" id="lgTag">없음</span></h3>
+      <div class="tagrow" id="lgTags"></div>
+      <div class="g8 mt"><input type="text" id="lgNote" placeholder="메모 (예: 왼발 인솔, 신발끈 풀림, 폰 주머니)" style="flex:3"><button class="btn-g" onclick="LG.noteFromInput()" style="flex:1">메모</button></div>
+      <div class="hint mt">태그를 누르면 그 구간이 시작되고, 다른 태그나 "구간 끝"을 누르면 끝납니다. PC 에서 구간마다 캡처 JSON 으로 잘라 재생·튜닝합니다.</div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">내보내기</h3>
+      <div class="row"><span class="lbl">저장된 로그</span><span class="val" id="lgSize" style="font-size:12px">–</span></div>
+      <div class="g8 mt"><button class="btn-p" onclick="LG.exportLog(false)">⬇ 파일 저장 (.json.gz)</button><button class="btn-g" onclick="LG.exportLog(true)">📤 공유</button></div>
+      <button class="btn-bad full mt" onclick="LG.clearAll()">🗑 로그 지우기</button>
+      <div class="hint mt">저장은 폰의 다운로드 폴더, 공유는 Dropbox/Drive/메신저로. PC 에서 <code>python tests/logtool.py split 파일</code> 로 태그 구간별 캡처 JSON 을 만들거나, 설정 탭 "게이트 튜닝 → JSON 열기"로 바로 엽니다(.gz 지원). 앱 빌드 <b id="lgBuild">–</b> · 엔진 <b id="lgEngine">–</b></div>
+    </div>
+  </section>
+
+  <!-- ============ 수동 ============ -->
+  <section class="panel" id="p-man">
+    <h2>수동 모드</h2>
+    <div class="card">
+      <p class="hint">설정한 (진동 On / 휴지 Off) 블록을 지정 시간 동안 반복합니다.</p>
+      <div class="row"><span class="lbl">진동 On (초)</span><input type="number" id="mOn" value="30" min="1" max="120"></div>
+      <div class="row"><span class="lbl">휴지 Off (초)</span><input type="number" id="mOff" value="10" min="1" max="120"></div>
+      <div class="row"><span class="lbl">지속 시간 (분)</span><input type="number" id="mMin" value="5" min="1" max="60"></div>
+      <div class="row"><span class="lbl">진동 세기 (%)</span><input type="number" id="mInt" value="60" min="0" max="100"></div>
+    </div>
+    <div class="card">
+      <div class="state" id="mState">대기<small id="mStateSub">–</small></div>
+      <div class="timer" id="mTimer">–</div>
+      <div class="g8 mt">
+        <button class="btn-p" id="manStart" onclick="manStart()">▶ 자극 시작</button>
+        <button class="btn-bad" id="manStop" onclick="manStop()" disabled>■ 정지</button>
+      </div>
+      <button class="btn-g full mt" id="buzz" onmousedown="motor(getVal('mInt'))" onmouseup="motor(0)" ontouchstart="motor(getVal('mInt'))" ontouchend="motor(0)">누르는 동안 진동 (테스트)</button>
+      <button class="btn-estop full mt" onclick="estop()">🛑 긴급정지 (E-STOP)</button>
+    </div>
+  </section>
+
+  <!-- ============ 설정 ============ -->
+  <section class="panel" id="p-set">
+    <h2>중재 프로토콜 설정</h2>
+    <div class="card">
+      <h3 style="margin-top:0">러닝 자동 중재 (단위: 초)</h3>
+      <div class="row"><span class="lbl">검출 창</span><input type="number" id="sWin" value="15" min="3" max="40" onchange="set('hWin',this.value); set('snapWin',this.value); baselineShow()"></div>
+      <div class="row"><span class="lbl">진동 On</span><input type="number" id="sOn" value="15" min="1" max="60"></div>
+      <div class="row"><span class="lbl">휴지 Off</span><input type="number" id="sOff" value="5" min="1" max="60"></div>
+      <div class="row"><span class="lbl">세트 반복 (회)</span><input type="number" id="sSets" value="9" min="1" max="30"></div>
+      <div class="row"><span class="lbl">중재 후 평가중지 (초)</span><input type="number" id="sPause" value="300" min="10" max="1800"></div>
+      <div class="row"><span class="lbl">검출 실패 시 대기 (초)</span><input type="number" id="sWait" value="10" min="5" max="300"></div>
+      <div class="row"><span class="lbl">진동 세기 (%)</span><input type="number" id="sInt" value="60" min="0" max="100"></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">비대칭 판정</h3>
+      <div class="row"><span class="lbl">지표(신호)</span>
+        <select id="sMetric" onchange="cfg.metric=this.value; document.getElementById('metricName').textContent=this.value; baselineRefresh()">
+          <option value="yaw_rate" selected>수직축 각속도 (원시 자이로·중력축 투영) ★기본</option>
+          <option value="roll">roll·사람기준 (중력 대비 좌우기울기)</option>
+        </select>
+      </div>
+      <div class="hint">둘 다 드리프트 없음·마운트 회전 무관. <b>수직축 각속도</b>=몸통 좌우 회전 속도(선회 구간은 보류), <b>roll</b>=좌우 기울기(추세제거 후 진폭 비대칭, 평균 편향은 별도). 판정 방법은 로브 짝 SI 고정, 고조파비는 진단 표시만.</div>
+      <div class="row"><span class="lbl">진동 부위</span>
+        <select id="sSide"><option value="large">비대칭 큰 쪽</option><option value="small">비대칭 작은 쪽</option></select>
+      </div>
+      <div class="row"><span class="lbl">절대 임계 (%) <span class="tag">기준선 없을 때</span></span><input type="number" id="sThr" value="15" min="0" max="60" onchange="baselineShow()"></div>
+      <p class="hint">임계·게이트 값은 실측 러닝 로그로 확정 권장(개인 기준선 기능은 다음 단계).</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">게이트 튜닝 <span class="tag">캡처 데이터로 예상 결과</span></h3>
+      <div class="row"><span class="lbl">데이터</span><span class="val" style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end"><select id="tuneSrc" onchange="tuneRun()"><option value="">(캡처 없음)</option></select><button class="mini" onclick="document.getElementById('tuneFile').click()">JSON 열기</button></span></div>
+      <input type="file" id="tuneFile" accept="application/json,.json" hidden onchange="tuneImport(this.files[0]); this.value=''">
+      <div class="row"><span class="lbl">지표</span><select id="tuneMetric" onchange="tuneRun()"><option value="yaw_rate">yaw_rate</option><option value="roll">roll</option></select></div>
+      <div class="tgrid" id="tuneParams"></div>
+      <div class="g8 mt">
+        <button class="btn-g" onclick="tuneReset()">기본값</button>
+        <button class="btn-p" onclick="tuneApply()">라이브에 적용</button>
+        <button class="btn-g" onclick="tuneSave()">브라우저에 저장</button>
+        <button class="btn-g" onclick="tuneClearSaved()">저장 해제</button>
+      </div>
+      <div class="hint mt" id="tuneSum">캡처(러닝 시작→정지)를 고르면 현재 값으로 5초 간격 창을 다시 판정해 표로 보여줍니다. 값을 바꾸면 즉시 재계산(파란 테두리=기본값과 다름). 행을 누르면 그 창의 스냅샷. "라이브에 적용"은 이번 세션, "브라우저에 저장"은 다음 실행에도 유지.</div>
+      <div style="overflow:auto; max-height:260px; margin-top:8px"><table class="ttab" id="tuneTab"></table></div>
+      <div class="chartwrap mt"><canvas class="chart" id="tuneChart" style="height:260px"></canvas><div id="tuneTip" class="tip" hidden></div></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">센서 융합 (개발)</h3>
+      <div class="row"><span class="lbl">전방축 (roll 회전축)</span>
+        <select id="sLeanAxis" onchange="leanAxis=[[1,0,0],[0,1,0],[0,0,1]][+this.value]; leanZero()">
+          <option value="2">Z · 윗면수직 (기본)</option>
+          <option value="0">X</option>
+          <option value="1">Y</option>
+        </select>
+      </div>
+      <button class="btn-g full mt" onclick="leanZero()">🧍 사람기준 roll 영점 (지금 자세=0)</button>
+      <div class="row"><span class="lbl">좌/우 표시 반전 <span class="tag">실측 전 잠정</span></span><input type="checkbox" id="sSignFlip" onchange="cfg.signFlip=this.checked; set('asymSide','–'); if(lastSnap) drawSnapshot(lastSnap)"></div>
+      <div class="row"><span class="lbl">마운트 보정 (Z축, 오일러용)</span>
+        <select id="sMount" onchange="ble.ctrl([0x12, +this.value])">
+          <option value="0">0° (보정 없음)</option>
+          <option value="1">+90°</option>
+          <option value="2">180°</option>
+          <option value="3">-90°</option>
+        </select>
+      </div>
+      <div class="hint">전방축은 쿼터니언 부호 수정 후 Z가 기본이며, 좌우 기울임에 roll이 반응하지 않을 때만 바꿉니다. 마운트 보정은 기기 오일러/3D 표시에만 영향.</div>
+      <div class="row"><span class="lbl">알고리즘</span>
+        <select id="sAlgo" onchange="ble.ctrl([0x09, +this.value])">
+          <option value="0">complementary</option><option value="1" selected>mahony</option>
+          <option value="2">madgwick</option><option value="3">eskf</option>
+        </select>
+      </div>
+      <div class="row"><span class="lbl">ZUPT</span><div class="switch on" id="swZupt" onclick="toggleSw('swZupt',v=>ble.ctrl([0x0B,v]))"></div></div>
+      <div class="row"><span class="lbl">정지 yaw 앵커-락</span><div class="switch on" id="swYaw" onclick="toggleSw('swYaw',v=>ble.ctrl([0x0D,v]))"></div></div>
+      <div class="g8 mt">
+        <button class="btn-g" onclick="ble.ctrl([0x0F])">영점 해제(절대)</button>
+        <button class="btn-g" onclick="ble.ctrl([0x08])">설정 NVM3 저장</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 개발/BLE ============ -->
+  <section class="panel" id="p-dev">
+    <h2>개발 · BLE 테스트</h2>
+    <div class="card">
+      <div class="ori">
+        <div class="b"><div class="n">gx</div><div class="v" id="gx" style="font-size:15px">–</div></div>
+        <div class="b"><div class="n">gy</div><div class="v" id="gy" style="font-size:15px">–</div></div>
+        <div class="b"><div class="n">gz</div><div class="v" id="gz" style="font-size:15px">–</div></div>
+        <div class="b"><div class="n">ax</div><div class="v" id="ax" style="font-size:15px">–</div></div>
+        <div class="b"><div class="n">ay</div><div class="v" id="ay" style="font-size:15px">–</div></div>
+        <div class="b"><div class="n">az</div><div class="v" id="az" style="font-size:15px">–</div></div>
+      </div>
+      <div class="hint mt">IMU Data(0xf001) 구독 <span id="imuSub">off</span> · <button class="btn-g" style="padding:5px 10px" onclick="toggleImu()">구독 토글</button></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">명령</h3>
+      <div class="g8"><button class="btn-g" onclick="ble.ctrl([0x0E,0])">영점 full</button><button class="btn-g" onclick="ble.ctrl([0x0E,1])">영점 heading</button></div>
+      <div class="g8 mt"><button class="btn-g" onclick="ble.ctrl([0x06])">자이로 재보정</button><button class="btn-g" onclick="ble.ctrl([0x07])">자세 리셋</button></div>
+      <div class="g8 mt"><button class="btn-g" onmousedown="motor(80)" onmouseup="motor(0)" ontouchstart="motor(80)" ontouchend="motor(0)">모터 80% (누름)</button><button class="btn-g" onclick="motor(0)">모터 OFF</button></div>
+      <div class="mt g8">
+        <input type="text" id="rawHex" placeholder="raw hex 예: 09 02" style="flex:2; background:var(--card2); border:1px solid var(--line); color:var(--tx); border-radius:8px; padding:9px">
+        <button class="btn-p" onclick="sendRaw()">전송</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">로그</h3>
+      <div class="log" id="log"></div>
+      <button class="btn-g full mt" onclick="document.getElementById('log').textContent=''">지우기</button>
+    </div>
+  </section>
+</main>
+
+<nav>
+  <button class="sel" data-p="conn" onclick="tab('conn')"><span class="ni">🔗</span>연결</button>
+  <button data-p="run" onclick="tab('run')"><span class="ni">🏃</span>러닝</button>
+  <button data-p="log" onclick="tab('log')"><span class="ni">📝</span>로그</button>
+  <button data-p="man" onclick="tab('man')"><span class="ni">🕹️</span>수동</button>
+  <button data-p="set" onclick="tab('set')"><span class="ni">⚙️</span>설정</button>
+  <button data-p="dev" onclick="tab('dev')"><span class="ni">🔧</span>개발</button>
+</nav>
+
+<script src="asym_engine.js?v=20260927-1914"></script>
+<script>
+// ===================== BLE 계층 =====================
+const UUID = {
+  svc:'e8a1f000-9c3b-4f2a-8b7d-1a2b3c4d5e6f',
+  imu:'e8a1f001-9c3b-4f2a-8b7d-1a2b3c4d5e6f',
+  ctrl:'e8a1f002-9c3b-4f2a-8b7d-1a2b3c4d5e6f',
+  status:'e8a1f003-9c3b-4f2a-8b7d-1a2b3c4d5e6f',
+  ori:'e8a1f004-9c3b-4f2a-8b7d-1a2b3c4d5e6f',
+  battSvc:'battery_service', batt:'00002a19-0000-1000-8000-00805f9b34fb',
+  devInfo:'device_information',
+  name:'00002a00-0000-1000-8000-00805f9b34fb', mfr:'00002a29-0000-1000-8000-00805f9b34fb',
+  model:'00002a24-0000-1000-8000-00805f9b34fb', fw:'00002a26-0000-1000-8000-00805f9b34fb'
+};
+const ALGO=['complementary','mahony','madgwick','eskf'];
+const ble = {
+  dev:null, srv:null, chars:{}, connected:false, imuSub:false, _q:Promise.resolve(),
+  async connect(){
+    this.dev = await navigator.bluetooth.requestDevice({
+      filters:[{namePrefix:'MotionCue'}],
+      optionalServices:[UUID.svc, UUID.battSvc, UUID.devInfo]
+    });
+    this.dev.addEventListener('gattserverdisconnected', ()=>onDisc());
+    this._userDisc=false;
+    await this._setup();
+  },
+  async _setup(){   // GATT 연결·특성·구독 (최초/재연결 공용)
+    log('연결 시도: '+this.dev.name,'tx');
+    const g = await this.dev.gatt.connect();
+    this.srv = await g.getPrimaryService(UUID.svc);
+    this.chars.ctrl = await this.srv.getCharacteristic(UUID.ctrl);
+    this.chars.ori  = await this.srv.getCharacteristic(UUID.ori);
+    this.chars.status = await this.srv.getCharacteristic(UUID.status);
+    this.chars.imu = await this.srv.getCharacteristic(UUID.imu);
+    await this.chars.ori.startNotifications();
+    this.chars.ori.addEventListener('characteristicvaluechanged', e=>onOri(e.target.value));
+    await this.chars.status.startNotifications();
+    this.chars.status.addEventListener('characteristicvaluechanged', e=>onStatus(e.target.value));
+    // IMU raw(0xf001, 12B/샘플 ≈50Hz) 자동 구독: 러닝 판정(|a|)·스텝 케이던스·수직축 각속도(yaw_rate) 에 필요. 리스너는 여기서 1회만 등록
+    try{ await this.chars.imu.startNotifications(); this.chars.imu.addEventListener('characteristicvaluechanged', e=>onImu(e.target.value));
+      this.imuSub=true; set('imuSub','on'); }
+    catch(e){ this.imuSub=false; set('imuSub','off'); log('IMU raw 구독 실패: '+e.message+' — yaw_rate 는 오일러 폴백, 러닝판정은 지표 기반','er'); }
+    // 배터리
+    try{ const bs=await g.getPrimaryService(UUID.battSvc); this.chars.batt=await bs.getCharacteristic(UUID.batt);
+      await this.chars.batt.startNotifications(); this.chars.batt.addEventListener('characteristicvaluechanged',e=>onBatt(e.target.value.getUint8(0)));
+      onBatt((await this.chars.batt.readValue()).getUint8(0)); }catch(e){}
+    // 장치정보
+    try{ const di=await g.getPrimaryService(UUID.devInfo);
+      for(const [id,u] of [['dvMfr',UUID.mfr],['dvModel',UUID.model],['dvFw',UUID.fw]]){
+        try{ dvSet(id, await readStr2(di,u)); }catch(e){}
+      }
+    }catch(e){}
+    dvSet('dvName', this.dev.name);
+    this._q=Promise.resolve();   // 쓰기 큐 리셋(끊긴 뒤 잔여 제거)
+    this.connected=true; onConn();
+    log('연결됨','rx');
+  },
+  async reconnect(){   // 의도치 않은 끊김 → 장치 재선택 없이 자동 재접속(백오프)
+    if(this._reconnecting) return; this._reconnecting=true;
+    for(let i=1;i<=12 && !this.connected && !this._userDisc; i++){
+      set('cName','재연결 중… ('+i+')'); set('connBtn','⏳ 재연결 중… (탭하면 중지)'); log('재연결 시도 '+i,'tx');
+      try{ await this._setup(); log('재연결 성공','rx'); break; }
+      catch(e){ log('재연결 실패: '+e.message,'er'); await sleep(1500); }
+    }
+    this._reconnecting=false;
+    if(!this.connected && !this._userDisc){ set('cName','미연결'); set('connBtn','🔗 MotionCue 연결'); log('재연결 포기 — 수동 연결하세요','er'); }
+  },
+  ctrl(bytes){   // 순차 큐로 직렬화 — 명령 순서 보장(경쟁/GATT충돌 방지)
+    if(!this.connected){ log('미연결 — 명령 무시','er'); return Promise.resolve(); }
+    this._q = this._q.then(async ()=>{
+      try{ await this.chars.ctrl.writeValue(new Uint8Array(bytes)); log('→ '+hex(bytes),'tx'); }
+      catch(e){ log('쓰기 실패 '+e.message,'er'); }
+    });
+    return this._q;
+  },
+  disconnect(){ this._userDisc=true; this._reconnecting=false; if(this.dev&&this.dev.gatt.connected) this.dev.gatt.disconnect(); }
+};
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+async function readStr2(svc,u){ const c=await svc.getCharacteristic(u); const v=await c.readValue(); return dec(v); }
+function dec(dv){ let s=''; for(let i=0;i<dv.byteLength;i++){ const b=dv.getUint8(i); if(b) s+=String.fromCharCode(b);} return s; }
+function hex(a){ return Array.from(a,b=>b.toString(16).padStart(2,'0')).join(' '); }
+function dvSet(id,v){ const e=document.getElementById(id); if(e&&v) e.textContent=v; }
+
+// ===================== 알림 파서 =====================
+let ori={roll:0,pitch:0,yaw:0,lean:0}, oriCount=0, leanUp0=null;
+let leanAxis=[0,0,1];   // 전방축(좌우기울기 회전축) — 실측으로 X/Y/Z 중 선택
+function leanZero(){ leanUp0=null; log('사람기준 roll 영점(서기) — 다음 샘플에서 기준 재설정','tx'); }
+// ---- 검출 엔진: asym_engine.js(window.MC). 기하/DSP 함수는 여기서 별칭으로 사용 (셀프테스트·리뷰 번들과 동일 코드) ----
+if(!window.MC){ console.error('asym_engine.js 로드 실패'); const b=document.getElementById('connBtn'); if(b){ b.textContent='asym_engine.js 로드 실패 — HTML과 같은 폴더에 있어야 합니다'; b.disabled=true; } }
+const {vperp, leanAbout, gravityUp, detrend} = window.MC;
+function onOri(dv){
+  ori.roll = dv.getInt16(0,true)/100; ori.pitch=dv.getInt16(2,true)/100; ori.yaw=dv.getInt16(4,true)/100;
+  // 사람기준 roll(lean): 중력-up 을 '전방축(leanAxis)' 기준으로 본 좌우기울기 각 → 드리프트無·마운트회전 불변
+  if(dv.byteLength>=14){
+    const w=dv.getInt16(6,true)/16384, x=dv.getInt16(8,true)/16384, y=dv.getInt16(10,true)/16384, z=dv.getInt16(12,true)/16384;
+    ori.q=[w,x,y,z];                                          // 3D 뷰어용 원본 쿼터니언(센서→월드)
+    const up=gravityUp(w,x,y,z);                              // 중력-up(센서좌표) = 펌웨어 gpred 규약(Rᵀ·ẑ), 정규화
+    ori.up=up;
+    if(leanUp0===null) leanUp0=up.slice();                    // 첫 샘플/영점 후 서기 기준 캡처
+    ori.lean = leanAbout(leanUp0, up, leanAxis);
+  }
+  const t=performance.now();
+  asym.push(t, ori.roll, ori.yaw, ori.lean, ori.up);   // 버퍼(차트·분석 공용) — roll(오일러)/yaw/lean(사람기준)/up
+  if(rec) rec.ori.push(oriRow({t, roll:ori.roll, yaw:ori.yaw, lean:ori.lean, up:ori.up}));   // 세션 캡처
+  if(LG.on) LG.pushOri(t, ori);
+  set('oLean', ori.lean.toFixed(1)+'°');
+  set('oRoll',ori.roll.toFixed(1)+'°'); set('oPitch',ori.pitch.toFixed(1)+'°'); set('oYaw',ori.yaw.toFixed(1)+'°');
+  oriCount++;
+}
+function onStatus(dv){
+  const vibOn=dv.getUint8(1), rez=dv.byteLength>5?dv.getUint8(5):0;
+  set('statTxt', rez===2?'영점적용':(rez===1?'영점대기':'–'));
+  // E-Stop 감지: 장치 estop 바이트(7B) 또는, 앱이 진동 명령 중인데 실제 off(=물리버튼 정지) 추론
+  const es = (dv.byteLength>6) ? dv.getUint8(6)
+           : ((appMotorCmd>0 && vibOn===0 && (Date.now()-motorOnSince>500)) ? 1 : 0);
+  if(es===1 && !estopActive){ estopActive=true; appMotorCmd=0;
+    proto.running&&proto.stop(); man.running&&manStop();
+    document.getElementById('estopBanner').classList.add('show'); log('E-STOP (장치)','er'); }
+}
+function onBatt(p){ set('batTxt',p+'%'); set('dvBat',p+'%'); }
+// IMU raw: int16 LE gx,gy,gz(0.07 dps/LSB, ±2000dps) · ax,ay,az(0.000488 g/LSB, ±16g) — 센서프레임 원시값(bias 미차감, 마운트 미회전)
+let imuCount=0, imuDisp=0;
+function onImu(dv){
+  if(dv.byteLength<12) return;
+  const t=performance.now();
+  const g=[0,1,2].map(i=>dv.getInt16(i*2,true)*0.07), a=[0,1,2].map(i=>dv.getInt16(6+i*2,true)*0.000488);
+  raw.push(t, g, a); imuCount++; if(rec) rec.raw.push(rawRow({t,g,a})); if(LG.on) LG.pushRaw(t, g, a);
+  if((++imuDisp%5)===0){ ['gx','gy','gz'].forEach((id,i)=>set(id,g[i].toFixed(1))); ['ax','ay','az'].forEach((id,i)=>set(id,a[i].toFixed(2))); }
+}
+setInterval(()=>{ set('oHz',oriCount); set('iHz',imuCount); LG.hz(oriCount, imuCount); oriCount=0; imuCount=0; }, 1000);
+// 라이브 러닝 판정(가속도, 히스테리시스) — 1초마다
+setInterval(()=>{ const now=performance.now(); if(!raw.alive(now, 1000)){ set('runLive','raw 없음'); return; }
+  const s=raw.tick(now); set('runLive', (s.running?'러닝 ✓':'비러닝')+(s.stdG!=null?' (std '+s.stdG.toFixed(2)+' g'+(s.stepSpm?' · '+s.stepSpm.toFixed(0)+' spm':' · 스텝 없음')+(s.strength!=null?' · 주기성 '+s.strength.toFixed(2):'')+')':'')); }, 1000);
+
+// ===================== 비대칭 프로토콜 상태기계 =====================
+const cfg={metric:'yaw_rate', signFlip:false};
+const APP_BUILD=(document.querySelector('meta[name=build]')||{}).content||'dev';   // 배포 스크립트가 치환. 폰에서 최신 버전인지 확인용   // 지표: 'yaw_rate'(수직축 각속도, 기본) | 'roll'(사람기준 lean). 방법은 A(로브 짝 SI) 고정
+// ===== 검출 엔진: asym_engine.js — RawEngine(원시 IMU: 러닝판정·케이던스·수직축각속도) + AsymEngine(자세 버퍼·분석·스냅샷) =====
+const raw = new MC.RawEngine();
+const asym = new MC.AsymEngine({raw});
+let _ls=null; try{ _ls=window.localStorage; }catch(e){}
+const baseStore = new MC.BaselineStore(_ls);
+const decider = new MC.Decider();
+// 상태 사유 → 표시 문구
+const REASON_KO={ insufficient_duration:'창 미충족(시간 부족)', stale_data:'수신 지연(최근 샘플 없음)', sample_gap:'수신 결손', sample_invalid:'샘플 이상',
+  reference_jump:'기준 급변(영점 변경?)', turn_contamination:'선회 중', amplitude_ramp:'진폭 급변', stationary:'정지 구간 포함', data_gaps:'결손으로 피크 손실',
+  period_ambiguous:'주기 불명확', lobe_count:'로브 수 비정상', not_running:'러닝 아님', low_amplitude:'흔들림 작음(안정)', weak_periodicity:'주기성 약함',
+  unclear_alternation:'좌우 교대 불명확', no_raw_data:'IMU raw 미수신', baseline_mismatch:'기준선 불일치' };
+// 로깅 (실측 튜닝용 CSV)
+let asymLog=[];
+function logAsym(o){ asymLog.push(o); if(asymLog.length>5000) asymLog.shift(); LG.event('window', o); }
+// 실측 골든 회귀용: 버퍼 원본(ori/raw) + 설정 + 최근 창 분석 R 을 JSON 으로 저장 → tests/vectors_real.js 의 windows[] 에 넣으면 셀프테스트 X 섹션이 재생·비교
+function downloadWindowJson(){ if(asym.buf.length<20){ alert('버퍼 부족 — 연결 후 몇 초 기다리세요'); return; }
+  const win=getVal('sWin'), R=asym.analyze(win, cfg.metric, undefined, performance.now()), exp={};
+  for(const k of ['state','reason','si','signedSI','strideHz','nPairs','nLobes','E','coverage','stepSpm','meanOffset','std','running','runSrc','srcYaw']) exp[k]=(R[k]==null? null : R[k]);
+  const o={schema:1, engine:MC.ENGINE_VER, date:new Date().toISOString(), device:devId(), metric:cfg.metric, winSec:win, leanAxis:leanAxis.slice(), signFlip:!!cfg.signFlip, bias:raw.bias.slice(), note:'',
+    ori:asym.buf.map(s=>[+s.t.toFixed(2), +s.roll.toFixed(2), +s.yaw.toFixed(2), +s.lean.toFixed(3), (s.up? s.up.map(v=>+v.toFixed(4)) : null)]),
+    raw:raw.buf.map(s=>[+s.t.toFixed(2), ...s.g.map(v=>+v.toFixed(2)), ...s.a.map(v=>+v.toFixed(4))]), expected:exp};
+  const b=new Blob([JSON.stringify(o)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+  a.download='window_'+devId()+'_'+cfg.metric+'_'+Date.now()+'.json'; a.click();
+  log('창 JSON 저장: ori '+o.ori.length+' · raw '+o.raw.length+' · 최근 창 '+R.state+(R.reason?'/'+R.reason:'')+(R.si!=null?' si '+R.si.toFixed(1)+'%':''),'rx'); }
+function downloadAsymLog(){ if(!asymLog.length){ alert('로그 없음'); return; }
+  // 기존 9열 유지 + 상태/품질/기준선 열 추가. 빈값 = 해당 없음
+  const h='time_iso,running,cadence_hz,metric,method,si_pct,harm_e,side,asym_pct,state,reason,n_pairs,signed_si,trimmed,e_pct,baseline_mu,delta,z,acc_running,step_spm,coverage,dev_hz';
+  const F=(v,d)=> (v==null||(typeof v==='number'&&!Number.isFinite(v))) ? '' : (typeof v==='number'? v.toFixed(d) : v);
+  const rows=asymLog.map(o=>[new Date(o.t).toISOString(), o.running?1:0, F(o.cadence,3), o.metric, o.method, F(o.si,1), F(o.harmE,1), o.side||'', F(o.si,1),
+    o.state||'', o.reason||'', o.nPairs??'', F(o.signedSI,1), o.trimmed??'', F(o.harmE,1), F(o.baselineMu,2), F(o.delta,2), F(o.z,2),
+    (o.accRunning==null?'':(o.accRunning?1:0)), F(o.stepSpm,1), F(o.coverage,3), F(o.devHz,1)].join(','));
+  const b=new Blob([h+'\n'+rows.join('\n')],{type:'text/csv'}); const a=document.createElement('a');
+  a.href=URL.createObjectURL(b); a.download='asym_log_'+Date.now()+'.csv'; a.click(); }
+
+const proto = {
+  running:false, state:'idle', tEnd:0, mode:'run', mismatchShown:false,
+  set:0, asym:0, side:'–',
+  start(){ this.running=true; snapMarkStart=0; snapMarkStop=0; decider.reset(); this.mismatchShown=false; recStart(); LG.awake('proto', true); this.gotoStand(); },   // 시작 마커는 서기 후 첫 평가 진입 시. 세션 캡처 시작
+  stop(){ this.running=false; this.state='idle'; motor(0); clearTimeout(this._to); vibShow('–');
+    if(snapMarkStart) snapMarkStop=performance.now();
+    LG.awake('proto', false); const cap=recStop(); if(cap){ log('세션 캡처: '+capLabel(cap),'rx'); try{ snapShowCapture(cap.id); }catch(e){ console.error(e); } }
+    setState('rState','rStateSub','대기','정지됨'); set('rTimer','–'); bar('rBar',0);
+    document.getElementById('runStart').disabled=false; document.getElementById('runStop').disabled=true;
+    document.getElementById('baseStart').disabled=false; document.getElementById('baseStop').disabled=true; },
+  gotoStand(){
+    // 준비(서기) 3초: 사람기준 roll 영점 + 자이로 bias 추정. 펌웨어 재영점(0x0E,1)은 표시용 전송만(완료를 기다리지 않음 — ZUPT OFF면 완료 안 됨)
+    const S=MC.GATE.standSec;
+    setState('rState','rStateSub','준비 (서기)', S+'초간 가만히 서 계세요 — 영점·자이로 bias');
+    ble.ctrl([0x0E,1]);
+    leanZero();
+    this._baseT=Date.now(); const tStart=performance.now();
+    const chk=()=>{ if(!this.running) return;
+      const el=(Date.now()-this._baseT)/1000;
+      set('rTimer', Math.max(0,Math.ceil(S-el))+'s'); bar('rBar', Math.min(1,el/S));
+      if(el>=S){
+        const b=raw.estimateBias(tStart, performance.now());
+        if(b.ok){ raw.setBias(b.bias); log('자이로 bias '+b.bias.map(v=>v.toFixed(2)).join(', ')+' dps (std|a| '+b.stdG.toFixed(3)+' g)','rx'); LG.event('bias',{bias:b.bias, stdG:b.stdG}); }
+        else log('bias 추정 보류: '+(b.n<10?'raw 샘플 부족':'정지 아님(std|a| '+b.stdG.toFixed(3)+' g)')+' — 이전 값 유지','er');
+        this.gotoDetect();
+      } else this._to=setTimeout(chk,200);
+    }; chk();
+  },
+  gotoDetect(){
+    this.state='detect'; if(!snapMarkStart) snapMarkStart=performance.now(); if(rec && !rec.marks.detect) rec.marks.detect=snapMarkStart;
+    const win=getVal('sWin'); this.tEnd=Date.now()+win*1000;
+    if(this.mode==='baseline') setState('rState','rStateSub','기준 측정 중', (baseStats?baseStats.n:0)+'/'+MC.GATE.baseline.minWindows+' 창 · 평소대로 달리세요 (진동 없음)');
+    else setState('rState','rStateSub','비대칭 평가','좌/우 대칭성 측정 중…');
+    this.tick(win, ()=>this.evalAsym());
+  },
+  evalAsym(){
+    // 상태 계약: hold(사유) / not_running / info(사유) / ok — 개입 판단은 ok 에서만
+    const win=getVal('sWin');
+    const r = asym.analyze(win, cfg.metric, undefined, performance.now());
+    const reasonKo = r.reason ? (REASON_KO[r.reason]||r.reason) : '';
+    set('cadence', (r.stepSpm ? r.stepSpm.toFixed(0)+' spm · ' : '')+(r.strideHz ? r.strideHz.toFixed(2)+' Hz' : '–'));
+    const runTxt=(r.running ? '러닝 ✓' : '비러닝')+(r.accStdG!=null?' ('+r.accStdG.toFixed(2)+' g)':'')+(r.runSrc==='acc'?'':' ·지표기반');
+    set('runGate', r.state==='hold' ? '보류 · '+reasonKo : r.state==='info' ? runTxt+' · '+reasonKo : runTxt);
+    set('harmE', r.E==null ? '–' : r.E.toFixed(0)+'%');
+    set('meanOff', r.meanOffset==null ? '–' : (r.meanOffset>=0?'+':'')+r.meanOffset.toFixed(1)+UNIT(cfg.metric));
+    set('pairTxt', r.sig ? (r.nPairs+' 쌍'+(r.trimmedCount?' · 절사 '+r.trimmedCount:'')+(r.outlierFlag?' ⚠이상피크':'')) : '–');
+    if(this.mode==='baseline'){ this.evalBaseline(r); return; }
+    // 편차: 기준선(μ/σ, 케이던스 구간) 또는 절대 임계 폴백 → 판정기(2창 연속·같은 방향)
+    const dev = (r.state==='ok') ? (baseline ? MC.baselineDeviation(baseline, r) : MC.absoluteDeviation(r, getVal('sThr'))) : null;
+    const d = decider.feed(r, dev, Date.now(), (2*win+getVal('sWait'))*1000);
+    logAsym({t:Date.now(), t0:r.t0, t1:r.t1, state:r.state, reason:r.reason, running:r.running, cadence:r.strideHz, metric:cfg.metric, method:MC.ENGINE_VER,
+      si:r.si, signedSI:r.signedSI, harmE:r.E, side:r.side, nPairs:r.nPairs, trimmed:r.trimmedCount, coverage:r.coverage, stepSpm:r.stepSpm,
+      accRunning:(r.runSrc==='acc'? r.running : null), baselineMu:(dev?dev.mu:null), delta:(dev?dev.delta:null), z:(dev?dev.z:null), devHz:r.devHz});
+    recWindow(r);
+    const f=document.getElementById('asymFill'), K=MC.GATE.baseline.consecutive;
+    if(r.state!=='ok'){ set('asymPct','–'); set('asymSide','–'); f.style.width='0%';
+      const cnt = d.count ? ' · 초과 '+d.count+'/'+K : '';
+      this.gotoWait((r.state==='hold' ? '보류 · '+reasonKo : r.state==='not_running' ? '러닝 아님' : reasonKo)+cnt+' · 다음 평가까지');
+      return; }
+    const sgn = (r.signedSI<0) ? -1 : 1;
+    set('asymPct', (r.signedSI>=0?'+':'')+r.signedSI.toFixed(0)+'%'+(baseline ? ' (Δ'+(dev.delta>=0?'+':'')+dev.delta.toFixed(1)+(dev.z!=null?' · z '+dev.z.toFixed(1):'')+')' : ''));
+    set('asymSide', LR(sgn)+' 쪽'+(dev.exceed ? ' · 임계 초과' : ''));
+    const w=Math.min(50, r.si/2);   // 게이지 (좌=왼쪽 채움, 우=오른쪽)
+    if(LR(sgn)==='우'){ f.style.left='50%'; f.style.right='auto'; } else { f.style.right='50%'; f.style.left='auto'; }
+    f.style.width=w+'%';
+    if(d.mismatch && !this.mismatchShown){ this.mismatchShown=true;
+      log('기준선 불일치 가능: 세션 시작부터 '+MC.GATE.baseline.offsetWindows+'창 연속 같은 방향 초과 — 마운트 위치/기준선 재측정을 확인하세요','er');
+      set('baseInfo','⚠ 기준선 불일치 가능(세션 시작부터 일관 이탈). 마운트 위치·기준선 재측정을 확인하세요.'); }
+    this.asym=r.si;
+    if(d.action==='intervene'){ this.side=LR(d.sign); this.gotoStim(); }
+    else this.gotoWait(dev.exceed ? '임계 초과 '+d.count+'/'+K+' · 다음 평가까지' : '기준 이내 · 다음 평가까지');
+  },
+  evalBaseline(r){
+    recWindow(r); if(r.state==='ok') baseStats.add(r);
+    const n=baseStats.n, need=MC.GATE.baseline.minWindows, sis=baseStats.rows.map(x=>x.si);
+    set('baseProg', n+' / '+need+' 창'+(r.state==='ok' ? ' ✓ '+(r.signedSI>=0?'+':'')+r.signedSI.toFixed(1)+'%' : ' · '+(r.state==='hold'?'보류':r.state==='not_running'?'러닝 아님':'정보')+' '+(REASON_KO[r.reason]||r.reason||''))
+      +(n ? ' · μ '+MC.mean(sis).toFixed(1)+'% σ '+MC.stdOf(sis).toFixed(1) : ''));
+    this.gotoDetect();   // 대기 없이 연속 창
+  },
+  gotoWait(sub){
+    this.state='wait'; const w=getVal('sWait');
+    setState('rState','rStateSub','대기', sub||'비대칭 미검출 · 다음 평가까지'); motor(0);
+    this.tick(w, ()=>this.gotoDetect());
+  },
+  gotoStim(){
+    this.state='stim'; this.set=0;
+    // 진동 부위: 큰쪽/작은쪽 설정 반영
+    const sideSel=document.getElementById('sSide').value;
+    const vibSide = (sideSel==='large')? this.side : (this.side==='우'?'좌':'우');
+    vibShow(vibSide);
+    this.stimBlock();
+  },
+  stimBlock(){
+    const sets=getVal('sSets');
+    if(this.set>=sets){ this.gotoPause(); return; }
+    this.set++;
+    const on=getVal('sOn'), off=getVal('sOff'), intn=getVal('sInt');
+    setState('rState','rStateSub','중재 (진동)', `세트 ${this.set}/${sets} · 진동 ${on}s`);
+    motor(intn);
+    this.tick(on, ()=>{
+      motor(0);
+      setState('rState','rStateSub','중재 (휴지)', `세트 ${this.set}/${sets} · 휴지 ${off}s`);
+      this.tick(off, ()=>this.stimBlock());
+    });
+  },
+  gotoPause(){
+    this.state='pause'; motor(0); vibShow('–');
+    const p=getVal('sPause');
+    setState('rState','rStateSub','평가 중지', '중재 후 휴식');
+    this.tick(p, ()=>this.gotoDetect());
+  },
+  tick(sec, done){
+    this.tEnd=Date.now()+sec*1000; const total=sec*1000;
+    const step=()=>{ if(!this.running) return;
+      const left=this.tEnd-Date.now();
+      if(left<=0){ done(); return; }
+      set('rTimer', fmt(left)); bar('rBar', 1-left/total);
+      this._to=setTimeout(step,200);
+    }; step();
+  }
+};
+function fmt(ms){ const s=Math.ceil(ms/1000); return s>=60? Math.floor(s/60)+':'+String(s%60).padStart(2,'0') : s+'s'; }
+function vibShow(side){
+  document.getElementById('vibL').classList.toggle('act', side==='좌');
+  document.getElementById('vibR').classList.toggle('act', side==='우');
+}
+function runStart(){ if(!ble.connected){ alert('먼저 연결하세요'); return; }
+  clearEstop();   // 재시작 시 E-Stop 자동 해제
+  document.getElementById('runStart').disabled=true; document.getElementById('runStop').disabled=false; document.getElementById('baseStart').disabled=true; proto.mode='run'; proto.start(); }
+function runStop(){ proto.stop(); }
+// 좌/우 표시: 양(+) 로브 = 좌 규약(실측 전 잠정), 설정의 표시 반전으로 교정
+function LR(sign){ const left = (sign>0) !== !!cfg.signFlip; return left ? '좌' : '우'; }
+
+// ===================== 기준 측정 (사전 baseline) =====================
+let baseline=null, baseStats=null;
+function devId(){ return (ble.dev && ble.dev.name) || 'nodev'; }
+function baselineRefresh(){ baseline = baseStore.load(devId(), cfg.metric, {metric:cfg.metric}); baselineShow(); }
+function baselineShow(){ const el=document.getElementById('thrTxt'); if(!el) return;
+  if(!baseline){ el.textContent='없음 — 절대 임계 '+getVal('sThr')+'% 사용 (2창 연속)'; return; }
+  const days=baseline.date ? Math.floor((Date.now()-Date.parse(baseline.date))/86400000) : null, stale=MC.baselineIsStale(baseline, Date.now());
+  const thr=Math.max(MC.GATE.baseline.kSigma*baseline.sigma, MC.GATE.baseline.floorPct);
+  el.innerHTML=`μ ${(baseline.mu>=0?'+':'')+baseline.mu.toFixed(1)}% · σ ${baseline.sigma.toFixed(1)} · 임계 ±${thr.toFixed(1)}%p · n ${baseline.n}`+(baseline.spmMean?` · ${baseline.spmMean.toFixed(0)} spm`:'')
+    +(days!=null?` · ${days}일 전`:'')+(stale?' <b style="color:#ffb454">⚠재측정 권장</b>':'')+(baseline.winSec!==getVal('sWin')?` <b style="color:#ff5a5a">창 ${baseline.winSec}s≠${getVal('sWin')}s</b>`:''); }
+function baseStart(){ if(!ble.connected){ alert('먼저 연결하세요'); return; }
+  clearEstop(); proto.mode='baseline';
+  baseStats=new MC.BaselineStats({metric:cfg.metric, forwardAxis:+document.getElementById('sLeanAxis').value, signFlip:!!cfg.signFlip, deviceId:devId(), winSec:getVal('sWin')});
+  document.getElementById('baseStart').disabled=true; document.getElementById('baseStop').disabled=false; document.getElementById('runStart').disabled=true;
+  set('baseProg','0 / '+MC.GATE.baseline.minWindows+' 창'); set('baseInfo','평소 페이스로 직선 러닝. 창이 ok 로 판정될 때만 집계됩니다(보류/러닝 아님/정보는 제외).');
+  proto.start(); }
+function baseStop(){ proto.stop(); proto.mode='run';
+  const need=MC.GATE.baseline.minWindows;
+  if(baseStats && baseStats.complete(need)){ const sm=baseStats.summary(Date.now()); const ok=baseStore.save(devId(), cfg.metric, sm); baseline=sm; baselineShow();
+    set('baseInfo', `저장${ok?'':' 실패(브라우저 저장소 불가 — JSON 내보내기 사용)'}: n ${sm.n} · μ ${sm.mu.toFixed(1)}% · σ ${sm.sigma.toFixed(1)}`+(sm.spmMean?` · ${sm.spmMean.toFixed(0)} spm`:'')+' · 이제 이 기준으로 판정합니다.');
+    log('기준선 저장 n='+sm.n+' μ='+sm.mu.toFixed(2)+' σ='+sm.sigma.toFixed(2),'rx'); }
+  else { const n=baseStats ? baseStats.n : 0; set('baseInfo', `미완(${n}/${need} 창) — 저장하지 않았습니다. 기존 기준선 유지.`); }
+  baseStats=null; }
+function baseExport(){ if(!baseline){ alert('저장된 기준선이 없습니다'); return; }
+  const b=new Blob([JSON.stringify(baseline,null,1)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+  a.download='baseline_'+devId()+'_'+cfg.metric+'_'+(baseline.date||'').slice(0,10)+'.json'; a.click(); }
+function baseImportFile(file){ if(!file) return; const rd=new FileReader();
+  rd.onload=()=>{ let o=null; try{ o=JSON.parse(rd.result); }catch(e){ alert('JSON 파싱 실패'); return; }
+    const v=MC.validateBaseline(o, {metric:cfg.metric, winSec:getVal('sWin')}); if(!v.ok){ alert('가져오기 거부: '+v.why); return; }
+    baseline=o; const ok=baseStore.save(devId(), cfg.metric, o); baselineShow();
+    set('baseInfo','가져오기 완료'+(ok?' (저장됨)':' (이 세션만 유효 — 저장소 불가)')+': n '+o.n+' · 기기 '+(o.deviceId||'?')+' · '+(o.date||'').slice(0,10)); };
+  rd.readAsText(file); }
+function baseClear(){ if(!baseline){ set('baseInfo','삭제할 기준선이 없습니다'); return; } if(!confirm('현재 기기·지표의 기준선을 삭제할까요?')) return;
+  baseStore.clear(devId(), cfg.metric); baseline=null; baselineShow(); set('baseInfo','기준선 삭제됨 — 절대 임계로 판정합니다.'); }
+baselineRefresh();
+
+// ===================== 수동 모드 =====================
+const man={ running:false, _to:null };
+function manStart(){ if(!ble.connected){ alert('먼저 연결하세요'); return; }
+  clearEstop();   // 재시작 시 E-Stop 자동 해제
+  man.running=true; document.getElementById('manStart').disabled=true; document.getElementById('manStop').disabled=false;
+  man.end=Date.now()+getVal('mMin')*60000; manBlock(); }
+function manStop(){ man.running=false; motor(0); clearTimeout(man._to);
+  document.getElementById('manStart').disabled=false; document.getElementById('manStop').disabled=true;
+  setState('mState','mStateSub','대기','정지됨'); set('mTimer','–'); }
+function manBlock(){
+  if(!man.running) return;
+  if(Date.now()>=man.end){ manStop(); setState('mState','mStateSub','완료','설정 시간 종료'); return; }
+  const on=getVal('mOn'), off=getVal('mOff'), intn=getVal('mInt');
+  setState('mState','mStateSub','진동', on+'s'); motor(intn);
+  manCount(on, ()=>{ motor(0); setState('mState','mStateSub','휴지', off+'s'); manCount(off, manBlock); });
+}
+function manCount(sec, done){ const end=Date.now()+sec*1000;
+  const step=()=>{ if(!man.running) return; const left=end-Date.now();
+    if(left<=0){ done(); return; } set('mTimer',fmt(left)); man._to=setTimeout(step,200); }; step(); }
+
+// ===================== 공통/UI =====================
+let appMotorCmd=0, motorOnSince=0, estopActive=false;
+function motor(pct){ const d=Math.max(0,Math.min(100,Math.round(pct))); if(window.LG) LG.event('motor',{pct:d});
+  if(estopActive && d>0) return;              // E-Stop 중엔 진동 명령 억제
+  if(d>0 && appMotorCmd===0) motorOnSince=Date.now();
+  appMotorCmd=d; ble.ctrl([0x10, d]); }
+function estop(){ estopActive=true; appMotorCmd=0; ble.ctrl([0x11,1]);
+  proto.running&&proto.stop(); man.running&&manStop();
+  document.getElementById('estopBanner').classList.add('show'); log('🛑 E-STOP','er'); }
+function hideEstop(){ document.getElementById('estopBanner').classList.remove('show'); }   // 배너만 닫기(알림 성격)
+function clearEstop(){ ble.ctrl([0x11,0]); estopActive=false; appMotorCmd=0; hideEstop(); } // 재시작 시 항상 해제 먼저(큐로 순서보장)
+function set(id,v){ const e=document.getElementById(id); if(e) e.textContent=v; }
+function getVal(id){ return +document.getElementById(id).value||0; }
+function setState(sid,subid,s,sub){ const e=document.getElementById(sid); if(e){ e.firstChild.textContent=s; document.getElementById(subid).textContent=sub; } if(window.LG) LG.event('state',{sid,s,sub}); }
+function bar(id,f){ document.getElementById(id).style.width=(Math.max(0,Math.min(1,f))*100)+'%'; }
+function tab(p){ document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  document.getElementById('p-'+p).classList.add('active');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('sel', b.dataset.p===p)); }
+function toggleSw(id,cb){ const e=document.getElementById(id); e.classList.toggle('on'); cb(e.classList.contains('on')?1:0); }
+async function toggleConn(){
+  if(ble.connected){ ble.disconnect(); return; }
+  if(ble._reconnecting){ ble._userDisc=true; ble._reconnecting=false;   // 재연결 중이면 중지
+    set('cName','미연결'); set('connBtn','🔗 MotionCue 연결'); log('재연결 중지','er'); return; }
+  try{ await ble.connect(); }catch(e){ log('연결 실패: '+e.message,'er'); }
+}
+function onConn(){ document.getElementById('cdot').classList.add('on'); set('cName', ble.dev.name); LG.event('ble',{action:'connect', name:ble.dev.name}); LG.awake('ble', true);
+  set('connBtn','🔌 연결 해제'); document.getElementById('devCard').style.display='block';
+  set('dvAlgo', ALGO[+document.getElementById('sAlgo').value]||'mahony');
+  // UI 스위치 상태를 기기에 동기(펌웨어 기본 ZUPT OFF 와 UI 표시가 어긋나지 않게)
+  ble.ctrl([0x0B, document.getElementById('swZupt').classList.contains('on')?1:0]);
+  ble.ctrl([0x0D, document.getElementById('swYaw').classList.contains('on')?1:0]);
+  baselineRefresh(); }
+function onDisc(){ ble.connected=false; document.getElementById('cdot').classList.remove('on'); LG.event('ble',{action:'disconnect', userDisc:!!ble._userDisc}); LG.awake('ble', false);
+  proto.running&&proto.stop(); man.running&&manStop(); log('연결 끊김','er');
+  if(!ble._userDisc && ble.dev && !ble._reconnecting){   // 의도치 않은 끊김 → 자동 재연결
+    log('자동 재연결 시작…','tx'); ble.reconnect();
+  } else { set('cName','미연결'); set('connBtn','🔗 MotionCue 연결'); }
+}
+async function toggleImu(){   // 알림 on/off 만 (리스너는 _setup 에서 1회 등록)
+  if(!ble.connected) return;
+  try{ if(!ble.imuSub){ await ble.chars.imu.startNotifications(); ble.imuSub=true; set('imuSub','on'); }
+    else { await ble.chars.imu.stopNotifications(); ble.imuSub=false; set('imuSub','off'); } }catch(e){ log(e.message,'er'); }
+}
+function sendRaw(){ const t=document.getElementById('rawHex').value.trim().split(/[\s,]+/).filter(Boolean).map(x=>parseInt(x,16));
+  if(t.some(isNaN)){ log('hex 파싱 실패','er'); return; } ble.ctrl(t); }
+function log(m,c){ const el=document.getElementById('log'); const s=document.createElement('span');
+  s.className=c||''; s.textContent=new Date().toLocaleTimeString()+' '+m+'\n'; el.appendChild(s); el.scrollTop=el.scrollHeight;
+  if(window.LG) LG.event('log',{m, c:c||''}); }
+if(!navigator.bluetooth){ document.getElementById('connBtn').textContent='이 브라우저는 Web Bluetooth 미지원'; document.getElementById('connBtn').disabled=true; }
+
+// ===================== 실시간 차트 (Canvas 스트립, 여러 캔버스, 라이브러리 無) =====================
+let chList=[]; const chWinSec=12;
+// y축: 기본 고정(roll ±10°, 각속도 ±100°/s), 확대/축소 버튼으로 단계 이동, '자동' 토글. 브라우저에 기억
+const CH_STEPS={lean:[1,2,5,10,20,45,90,180], rate:[10,20,50,100,200,500,1000,2000]}; const chRange={lean:10, rate:100, auto:false};
+try{ const o=JSON.parse(localStorage.getItem('mc.ui.chRange')||'null'); if(o){ if(CH_STEPS.lean.includes(o.lean)) chRange.lean=o.lean; if(CH_STEPS.rate.includes(o.rate)) chRange.rate=o.rate; chRange.auto=!!o.auto; } }catch(e){}
+function chSaveRange(){ try{ localStorage.setItem('mc.ui.chRange', JSON.stringify(chRange)); }catch(e){} chShowRange(); }
+function chShowRange(){ document.querySelectorAll('.chLeanTxt').forEach(e=>e.textContent=chRange.lean); document.querySelectorAll('.chRateTxt').forEach(e=>e.textContent=chRange.rate); document.querySelectorAll('.chAutoTxt').forEach(e=>e.textContent=chRange.auto?'자동 ✓':'자동'); }
+function chZoom(kind, dir){ const st=CH_STEPS[kind]; let i=st.indexOf(chRange[kind]); if(i<0) i=st.findIndex(v=>v>=chRange[kind]); i=Math.max(0, Math.min(st.length-1, i-dir)); chRange[kind]=st[i]; chRange.auto=false; chSaveRange(); }
+function chAutoToggle(){ chRange.auto=!chRange.auto; chSaveRange(); }
+chShowRange();
+function sizeChart(o){ if(!o.cv.clientWidth) return; o.dpr=window.devicePixelRatio||1;
+  o.cv.width=Math.max(1,Math.round(o.cv.clientWidth*o.dpr)); o.cv.height=Math.max(1,Math.round(o.cv.clientHeight*o.dpr)); }
+function initChart(){
+  document.querySelectorAll('canvas.livechart').forEach(cv=> chList.push({cv, ctx:cv.getContext('2d'), dpr:1}));
+  chList.forEach(sizeChart); window.addEventListener('resize', ()=> chList.forEach(sizeChart));
+  setInterval(()=> chList.forEach(drawChartTo), 50);   // 20 fps · 모든 실시간 캔버스
+}
+function yawRateSeries(w){ const N=w.length, r=new Array(N).fill(0), dtS=MC.effectivePeriod(w.map(s=>s.t), 1000/MC.GATE.fsGrid)/1000;   // 오일러 폴백: 실제 수신주기(도착 지터 아님)
+  for(let i=1;i<N;i++){ let d=w[i].yaw-w[i-1].yaw; if(d>180)d-=360; else if(d<-180)d+=360; r[i]=d/dtS; } if(N>1)r[0]=r[1]; return r; }
+function drawChartTo(o){
+  const cv=o.cv; if(!cv.clientWidth) return;                     // 숨겨진 탭은 스킵
+  if(cv.width!==Math.round(cv.clientWidth*o.dpr)) sizeChart(o);  // 탭 전환 후 지연 리사이즈
+  const ctx=o.ctx, W=cv.width, H=cv.height, dpr=o.dpr;
+  ctx.clearRect(0,0,W,H); ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  const buf=asym.buf;
+  if(buf.length<2){ ctx.fillStyle='#5b6472'; ctx.font=(13*dpr)+'px sans-serif';
+    ctx.fillText('연결 후 자세 알림이 오면 신호가 표시됩니다', 12*dpr, H/2); return; }
+  const now=buf[buf.length-1].t, t0=now-chWinSec*1000;
+  const w=buf.filter(s=>s.t>=t0); if(w.length<2) return;
+  const useDetrend=document.getElementById('chDetrend').checked;
+  const lean=w.map(s=>s.lean||0), leanT=w.map(s=>s.t);
+  // 아래 패널: raw 가 살아 있으면 수직축 각속도(자이로·최근 2초 가속도평균 up 투영), 아니면 오일러 yaw 차분(명목 dt) 폴백
+  let yr=null, yrT=null, yrName='yaw 각속도·오일러폴백 (dps)';
+  if(raw.alive(now, 500)){ const up=raw.upFromAccelMean(now-2000, now); const rw=raw.slice(t0, now);
+    if(up && rw.length>1){ yr=rw.map(x=>MC.yawRate(x.g, up, raw.bias)); yrT=rw.map(x=>x.t); yrName='수직축 각속도 (dps)'; } }
+  if(!yr){ yr=yawRateSeries(w); yrT=leanT; }
+  if(useDetrend){ detrend(lean); detrend(yr); }   // 0중심(추세제거) → 좌우 비대칭 눈으로 확인
+  const panels=[{name:'roll·사람기준 (°)', col:'#4c8dff', vals:lean, t:leanT},
+                {name:yrName, col:'#37d67a', vals:yr, t:yrT}];
+  const ph=H/panels.length;
+  panels.forEach((p,pi)=>{
+    const y0=pi*ph;
+    let amp; if(chRange.auto){ amp=0.5; for(const v of p.vals){ const a=Math.abs(v); if(a>amp)amp=a; } amp*=1.15; } else amp=chRange[pi===0?'lean':'rate'];
+    const lo=-amp, hi=amp, span=hi-lo;
+    ctx.fillStyle = pi%2 ? '#0c1017' : '#0a0d12'; ctx.fillRect(0,y0,W,ph);
+    ctx.strokeStyle='#222b36'; ctx.lineWidth=1*dpr; ctx.strokeRect(0.5,y0+0.5,W-1,ph-1);
+    const zy=y0+ph-(0-lo)/span*ph;   // 0 기준선(점선)
+    ctx.strokeStyle='#3a4553'; ctx.setLineDash([4*dpr,4*dpr]); ctx.beginPath();
+    ctx.moveTo(0,zy); ctx.lineTo(W,zy); ctx.stroke(); ctx.setLineDash([]);
+    ctx.save(); ctx.beginPath(); ctx.rect(0,y0,W,ph); ctx.clip();   // 범위 밖은 패널에서 잘라냄(고정 y축)
+    ctx.strokeStyle=p.col; ctx.lineWidth=1.6*dpr; ctx.beginPath();   // 파형
+    for(let i=0;i<p.vals.length;i++){ const x=(p.t[i]-t0)/(chWinSec*1000)*W;
+      const y=y0+ph-(p.vals[i]-lo)/span*ph; i?ctx.lineTo(x,y):ctx.moveTo(x,y); }
+    ctx.stroke(); ctx.restore();
+    ctx.fillStyle=p.col; ctx.font='bold '+(12*dpr)+'px sans-serif'; ctx.textAlign='left';
+    ctx.fillText(p.name+(useDetrend?'':' (원신호)'), 8*dpr, y0+16*dpr);
+    ctx.fillStyle='#7b8494'; ctx.font=(11*dpr)+'px sans-serif'; ctx.textAlign='right';
+    ctx.fillText((chRange.auto?'자동 ':'')+'±'+amp.toFixed(amp<10?1:0), W-8*dpr, y0+16*dpr);
+  });
+}
+initChart();
+
+// ===================== 비대칭 분석 스냅샷 (정지 그래프) =====================
+let lastSnap=null, snapMarkStart=0, snapMarkStop=0;
+const SNAP_PRE=3;   // 시작선 앞 정지구간 사전기록(초)
+const UNIT = m => m==='yaw_rate' ? '°/s' : '°';
+function renderSnapshot(){
+  const el=document.getElementById('snapTxt'), srcSel=document.getElementById('snapSrc'), src=srcSel? srcSel.value : 'live';
+  const lo=document.getElementById('snapLiveOpt'); if(lo) lo.textContent='라이브 (최근 '+(getVal('sWin')||15)+'초)';
+  if(src==='live'){
+    const buf=asym.buf;
+    if(buf.length<20){ el.textContent='데이터가 부족합니다. 연결 후 자세 알림을 켜고 몇 초 기다렸다가 다시 누르세요.'; return; }
+    const lastT=buf[buf.length-1].t, win=getVal('sWin')||15;
+    let aT0, aT1;
+    if(snapMarkStart>0 && (lastT - snapMarkStart) < 43000){ aT0=snapMarkStart; aT1=(snapMarkStop>snapMarkStart)?snapMarkStop:lastT; }   // 진행 중 세션 마커
+    else { aT1=lastT; aT0=aT1 - win*1000; }                                                                                       // 최근 창
+    const snap=asym.snapshot(cfg.metric, {showT0:aT0-SNAP_PRE*1000, showT1:aT1, aT0, aT1});
+    if(!snap){ el.textContent='데이터가 부족합니다. 몇 초 더 기록 후 다시 누르세요.'; return; }
+    lastSnap=snap; drawSnapshot(snap); set('snapMeta', snapMeta(cfg.metric, snap.srcYaw)); el.innerHTML=snapText(snap.R, cfg.metric)+' · 라이브'; return; }
+  const cap=capOf(src); if(!cap){ el.textContent='캡처가 없습니다. 러닝 시작→정지 하면 자동으로 캡처됩니다.'; return; }
+  const eng=enginesFromCapture(cap, tuneOver), rk=(document.getElementById('snapRange')||{}).value||'all';   // 라이브와 같은 게이트(오버라이드 포함)
+  set('snapMeta', snapMeta(cap.metric, null)+' · 캡처');
+  if(rk==='all'){ lastSnap=null; drawOverview(cap, eng); el.innerHTML=overviewText(cap); return; }
+  let aT0, aT1;
+  if(rk==='last'){ aT1=cap.marks.stop; aT0=aT1-cap.winSec*1000; }
+  else { const w=cap.windows[+rk.slice(1)]; if(!w){ el.textContent='창 없음'; return; } aT0=w.t0; aT1=w.t1; }
+  const snap=eng.asym.snapshot(cap.metric, {showT0:aT0-SNAP_PRE*1000, showT1:aT1, aT0, aT1});
+  if(!snap){ el.textContent='구간 데이터가 부족합니다.'; return; }
+  lastSnap=snap; drawSnapshot(snap); el.innerHTML=snapText(snap.R, cap.metric)+' · '+capLabel(cap);
+}
+function snapMeta(metric, srcYaw){ return (metric==='yaw_rate'?'수직축 각속도 (°/s)':'roll·사람기준 (°)')+' · 로브 SI · '+MC.ENGINE_VER+(srcYaw==='euler'?' · 오일러폴백':''); }
+function snapText(R, metric){ const u=UNIT(metric);
+  return snapStateHtml(R)
+    + (R.strideHz ? ` · 스트라이드 <b>${R.strideHz.toFixed(2)} Hz</b>`+(R.stepSpm?` (${R.stepSpm.toFixed(0)} spm)`:'') : '')
+    + ` · 로브 ${R.nLobes} · 쌍 <b>${R.nPairs}</b>`+(R.trimmedCount?` (절사 ${R.trimmedCount})`:'')+(R.outlierFlag?' <b style="color:#ffb454">⚠이상 피크</b>':'')
+    + (R.signedSI!=null ? ` · ${LR(1)} <b style="color:#4c8dff">${R.meanL.toFixed(1)}${u}</b> / ${LR(-1)} <b style="color:#e0762a">${R.meanR.toFixed(1)}${u}</b> · SI <b>${(R.signedSI>=0?'+':'')+R.signedSI.toFixed(1)}%</b> (큰쪽 ${LR(R.signedSI<0?-1:1)})` : '')
+    + ` · 고조파비 ${R.E==null?'–':R.E.toFixed(0)+'%'}`
+    + (R.coverage!=null ? ` · 커버리지 ${(R.coverage*100).toFixed(0)}%` : '')
+    + (R.devHz ? ` · 수신 ${R.devHz.toFixed(0)} Hz` : ''); }
+const ROLE_KO={ paired:'짝', edge:'가장자리', unpaired:'짝 없음', short:'스파이크', flat:'평탄', weak:'약함', gapped:'결손' };
+function snapStateText(R){ return R.state==='ok' ? 'ok · 판정 가능' : (R.state==='hold'?'보류':R.state==='not_running'?'러닝 아님':'정보')+' · '+(REASON_KO[R.reason]||R.reason||''); }
+function snapStateColor(R){ return R.state==='ok' ? '#37d67a' : (R.state==='info' ? '#ffb454' : R.state==='not_running' ? '#8a93a3' : '#ff5a5a'); }
+function snapStateHtml(R){ return `<b style="color:${snapStateColor(R)}">${snapStateText(R)}</b>`; }
+// 정지 스냅샷 그리기 (cvId: 캔버스 id, 기본 snapChart). 피크 툴팁용 데이터는 캔버스에 보관(cv._peaks / cv._snap)
+function drawSnapshot(snap, cvId){
+  const cv=document.getElementById(cvId||'snapChart'); if(!cv) return;
+  const dpr=window.devicePixelRatio||1;
+  cv.width=Math.max(1,Math.round(cv.clientWidth*dpr)); cv.height=Math.max(1,Math.round(cv.clientHeight*dpr));
+  const ctx=cv.getContext('2d'), W=cv.width, H=cv.height;
+  const BLUE='#4c8dff', ORANGE='#e0762a', GRAY='#8a93a3', u=UNIT(snap.metric), R=snap.R, y=snap.disp.y, dt=snap.disp.dt, N=y.length;
+  ctx.clearRect(0,0,W,H); ctx.textBaseline='alphabetic'; cv._peaks=[]; cv._snap=snap;
+  const X=ms=> ms/snap.span*W;
+  const topH=Math.round(H*0.60), botH=H-topH;
+  // ---- 파형 패널 ----
+  let amp=0.5; for(const v of y){ const a=Math.abs(v); if(a>amp)amp=a; }
+  const lo=-amp*1.12, hi=amp*1.12, spanV=hi-lo, Y=v=> topH*(1-(v-lo)/spanV);
+  ctx.fillStyle='#0a0d12'; ctx.fillRect(0,0,W,topH);
+  const xs=X(snap.aStart);                                   // 정지 사전기록 음영
+  if(xs>1){ ctx.fillStyle='rgba(120,140,180,0.10)'; ctx.fillRect(0,0,xs,topH);
+    ctx.fillStyle='#5b6472'; ctx.font=(11*dpr)+'px sans-serif'; ctx.textAlign='left'; ctx.fillText('정지(사전기록)', 6*dpr, topH-8*dpr); }
+  if(snap.gate){ ctx.fillStyle='rgba(255,255,255,0.06)'; ctx.fillRect(0, Y(snap.gate), W, Y(-snap.gate)-Y(snap.gate)); }   // ±불감대(로브 진입 임계)
+  ctx.strokeStyle='#222b36'; ctx.lineWidth=1*dpr; ctx.strokeRect(0.5,0.5,W-1,topH-1);
+  ctx.strokeStyle='#3a4553'; ctx.setLineDash([4*dpr,4*dpr]);  // 0선
+  ctx.beginPath(); ctx.moveTo(0,Y(0)); ctx.lineTo(W,Y(0)); ctx.stroke();
+  if(R.meanL!=null){ ctx.strokeStyle=BLUE; ctx.beginPath(); ctx.moveTo(0,Y(R.meanL)); ctx.lineTo(W,Y(R.meanL)); ctx.stroke();       // 좌 대표값(절사평균/중앙값)
+    ctx.strokeStyle=ORANGE; ctx.beginPath(); ctx.moveTo(0,Y(-R.meanR)); ctx.lineTo(W,Y(-R.meanR)); ctx.stroke(); }                  // 우 대표값
+  ctx.setLineDash([]);
+  ctx.strokeStyle='#c8d0dc'; ctx.lineWidth=1.4*dpr; ctx.beginPath();   // 파형
+  for(let i=0;i<N;i++){ const x=X(i*dt), yy=Y(y[i]); i?ctx.lineTo(x,yy):ctx.moveTo(x,yy); }
+  ctx.stroke();
+  for(const p of snap.peaks){ const x=X(p.tRel), yy=Y(p.v), side=LR(p.sign);   // 로브 극값: 짝=채움(좌 파랑/우 주황), 그 외=회색 속빈
+    ctx.beginPath(); ctx.arc(x,yy,3.6*dpr,0,7);
+    if(p.role==='paired'){ ctx.fillStyle=p.sign>0?BLUE:ORANGE; ctx.fill(); }
+    else { ctx.strokeStyle=GRAY; ctx.lineWidth=1.2*dpr; ctx.stroke(); }
+    cv._peaks.push({cx:x/dpr, cy:yy/dpr, v:p.v, side, role:p.role}); }
+  const vline=(ms,col,lab)=>{ const x=X(ms); if(x<0||x>W) return; ctx.strokeStyle=col; ctx.lineWidth=1.6*dpr;
+    ctx.setLineDash([5*dpr,3*dpr]); ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,topH); ctx.stroke(); ctx.setLineDash([]);
+    const r=x>W-42*dpr; ctx.fillStyle=col; ctx.font='bold '+(11*dpr)+'px sans-serif'; ctx.textAlign=r?'right':'left';
+    ctx.fillText(lab, x+(r?-4*dpr:4*dpr), 30*dpr); };
+  vline(snap.aStart,'#37d67a','▶시작'); vline(snap.aStop,'#ff5a5a','■정지');
+  ctx.font='bold '+(12*dpr)+'px sans-serif'; ctx.textAlign='left';
+  ctx.fillStyle=BLUE; ctx.fillText('● '+LR(1), 8*dpr, 16*dpr);
+  ctx.fillStyle=ORANGE; ctx.fillText('● '+LR(-1), 44*dpr, 16*dpr);
+  ctx.fillStyle=GRAY; ctx.fillText('○ 제외', 80*dpr, 16*dpr);
+  ctx.fillStyle='#7b8494'; ctx.textAlign='right'; ctx.font=(11*dpr)+'px sans-serif';
+  ctx.fillText('단위 '+u+' · ±'+amp.toFixed(amp<10?1:0), W-8*dpr, 16*dpr);
+  if(R.meanL!=null){ ctx.textAlign='right'; ctx.font='bold '+(11*dpr)+'px sans-serif';
+    ctx.fillStyle=BLUE; ctx.fillText(LR(1)+' '+R.meanL.toFixed(1)+u, W-8*dpr, Y(R.meanL)-3*dpr);
+    ctx.fillStyle=ORANGE; ctx.fillText(LR(-1)+' '+R.meanR.toFixed(1)+u, W-8*dpr, Y(-R.meanR)+13*dpr); }
+  // ---- 막대 + SI + 상태 ----
+  const by0=topH; ctx.fillStyle='#0c1017'; ctx.fillRect(0,by0,W,botH);
+  ctx.strokeStyle='#222b36'; ctx.strokeRect(0.5,by0+0.5,W-1,botH-1);
+  ctx.textAlign='right'; ctx.fillStyle=snapStateColor(R); ctx.font='bold '+(12*dpr)+'px sans-serif';
+  ctx.fillText(snapStateText(R), W-8*dpr, by0+16*dpr);
+  if(R.meanL!=null){
+    const L=R.meanL, Rv=R.meanR, mx=Math.max(L,Rv,0.001), barMaxH=botH-46*dpr, bw=W*0.13, bx=W*0.08, gap=W*0.12, baseY=by0+botH-24*dpr;
+    const drawBar=(x,val,col,lab)=>{ const h=Math.max(1,val/mx*barMaxH);
+      ctx.fillStyle=col; ctx.fillRect(x, baseY-h, bw, h);
+      ctx.fillStyle='#e8ecf1'; ctx.font='bold '+(12*dpr)+'px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(val.toFixed(1)+u, x+bw/2, baseY-h-6*dpr);
+      ctx.fillStyle='#8a93a3'; ctx.font=(12*dpr)+'px sans-serif'; ctx.fillText(lab, x+bw/2, baseY+16*dpr); };
+    drawBar(bx, L, BLUE, LR(1)); drawBar(bx+bw+gap, Rv, ORANGE, LR(-1));
+    ctx.textAlign='left'; ctx.fillStyle=R.state==='ok'?'#e8ecf1':'#8a93a3'; ctx.font='bold '+(28*dpr)+'px sans-serif';
+    ctx.fillText((R.signedSI>=0?'+':'')+R.signedSI.toFixed(0)+'%', W*0.46, by0+botH*0.50);
+    ctx.fillStyle='#8a93a3'; ctx.font=(12*dpr)+'px sans-serif';
+    ctx.fillText('비대칭 · 큰쪽 '+LR(R.signedSI<0?-1:1)+' · 쌍 '+R.nPairs+(R.trimmedCount?' · 절사 '+R.trimmedCount:'')+(R.outlierFlag?' · ⚠이상피크':''), W*0.46, by0+botH*0.50+18*dpr);
+  } else {
+    ctx.textAlign='left'; ctx.fillStyle='#8a93a3'; ctx.font=(12*dpr)+'px sans-serif';
+    ctx.fillText('좌우 대표값 없음 · 로브 '+R.nLobes+' · 쌍 '+R.nPairs, 10*dpr, by0+botH*0.55);
+  }
+}
+// 피크 툴팁(hover/터치 시 값·역할 표시) — 캔버스별 바인딩
+function snapTipAt(cv, tip, clientX, clientY){
+  const r=cv.getBoundingClientRect(), x=clientX-r.left, y=clientY-r.top; let best=null, bd=16;
+  for(const h of (cv._peaks||[])){ const d=Math.hypot(h.cx-x, h.cy-y); if(d<bd){ bd=d; best=h; } }
+  if(best){ const u=UNIT(cv._snap? cv._snap.metric : 'roll');
+    tip.hidden=false; tip.style.left=best.cx+'px'; tip.style.top=best.cy+'px';
+    tip.textContent=best.side+' '+best.v.toFixed(1)+u+' · '+(ROLE_KO[best.role]||best.role); }
+  else tip.hidden=true;
+}
+function bindSnapTips(cvId, tipId){ const cv=document.getElementById(cvId), tip=document.getElementById(tipId); if(!cv||!tip) return;
+  const hide=()=>{ tip.hidden=true; };
+  cv.addEventListener('mousemove', e=> snapTipAt(cv, tip, e.clientX, e.clientY)); cv.addEventListener('mouseleave', hide);
+  const touch=e=>{ if(e.touches&&e.touches[0]) snapTipAt(cv, tip, e.touches[0].clientX, e.touches[0].clientY); };
+  cv.addEventListener('touchstart', touch, {passive:true}); cv.addEventListener('touchmove', touch, {passive:true}); cv.addEventListener('touchend', ()=> setTimeout(hide, 1500)); }
+bindSnapTips('snapChart','snapTip'); bindSnapTips('tuneChart','tuneTip');
+window.addEventListener('resize', ()=>{ if(lastSnap) drawSnapshot(lastSnap); });
+
+// ===================== 세션 캡처: 러닝/기준 측정 시작→정지 전체(ori+raw)를 기록해 보관 =====================
+// 스냅샷은 라이브 버퍼(45 s)가 아니라 캡처에서 그리므로 지나가 버리지 않음. JSON 저장 형식은 '창 JSON' 과 호환(+marks/windows)
+let rec=null; const captures=[]; const CAP_MAX=6;
+const oriRow=s=>[+s.t.toFixed(2), +(s.roll||0).toFixed(2), +(s.yaw||0).toFixed(2), +(s.lean||0).toFixed(3), (s.up? s.up.map(v=>+v.toFixed(4)) : null)];
+const rawRow=s=>[+s.t.toFixed(2), +s.g[0].toFixed(2), +s.g[1].toFixed(2), +s.g[2].toFixed(2), +s.a[0].toFixed(4), +s.a[1].toFixed(4), +s.a[2].toFixed(4)];
+function recStart(){ const now=performance.now();
+  rec={schema:1, kind:'session', id:'cap'+Date.now(), engine:MC.ENGINE_VER, date:new Date().toISOString(), device:devId(), metric:cfg.metric, winSec:getVal('sWin')||15,
+    leanAxis:leanAxis.slice(), signFlip:!!cfg.signFlip, bias:null, note:'', mode:proto.mode, marks:{start:now, detect:null, stop:null}, windows:[], ori:[], raw:[], expected:null, durSec:0};
+  for(const s of asym.buf) if(s.t>=now-SNAP_PRE*1000) rec.ori.push(oriRow(s));      // 사전구간(시작 직전 정지)
+  for(const s of raw.buf) if(s.t>=now-SNAP_PRE*1000) rec.raw.push(rawRow(s));
+  refreshCaptureLists(); const ss=document.getElementById('snapSrc'); if(ss){ ss.value='session'; snapRangeOptions(); }
+  set('snapTxt','세션 진행 중 — 창이 평가될 때마다 시작부터 지금까지의 개요가 갱신됩니다. 📸 분석을 누르면 즉시 갱신.'); }
+function recWindow(r){ if(!rec) return; rec.windows.push({t0:r.t0, t1:r.t1, state:r.state, reason:r.reason, si:r.si, signedSI:r.signedSI, strideHz:r.strideHz, nPairs:r.nPairs, E:r.E,
+  coverage:r.coverage, stepSpm:r.stepSpm, running:r.running, devHz:r.devHz, mode:proto.mode});
+  const ss=document.getElementById('snapSrc'); if(ss && ss.value==='session'){ snapRangeOptions(); try{ renderSnapshot(); }catch(e){ console.error(e); } } }
+function recStop(){ if(!rec) return null; const now=performance.now(); rec.marks.stop=now; rec.bias=raw.bias.slice(); rec.durSec=(now-rec.marks.start)/1000;
+  const R=asym.analyze(rec.winSec, cfg.metric, undefined, undefined), ex={};   // 정지 전 마지막 창(셀프테스트 X 재생과 같은 정의)
+  for(const k of ['state','reason','si','signedSI','strideHz','nPairs','nLobes','E','coverage','stepSpm','meanOffset','std','running','runSrc','srcYaw']) ex[k]=(R[k]==null? null : R[k]);
+  rec.expected=ex; const c=rec; rec=null; LG.event('capture',{id:c.id, metric:c.metric, winSec:c.winSec, marks:c.marks, windows:c.windows, expected:ex, durSec:c.durSec, mode:c.mode}); captures.unshift(c); while(captures.length>CAP_MAX) captures.pop(); refreshCaptureLists(); return c; }
+function capLabel(c){ const d=new Date(c.date), hh=d.toTimeString().slice(0,8), m=Math.floor(c.durSec/60), s=Math.round(c.durSec%60);
+  return (c.live?'진행 중 · ':'')+`${hh} · ${m?m+'분 ':''}${s}초 · 창 ${c.windows.length}`+(c.mode==='baseline'?' · 기준측정':'')+(c.imported?' · 파일':''); }
+// 선택된 소스의 캡처 객체. 'session' = 진행 중인 기록(rec)을 지금 시점까지의 캡처처럼 보기(ori/raw 공유)
+function capOf(id){ if(id==='session'){ if(!rec) return null; const now=performance.now();
+    return Object.assign({}, rec, {marks:Object.assign({}, rec.marks, {stop:now}), durSec:(now-rec.marks.start)/1000, live:true}); }
+  return captures.find(c=>c.id===id); }
+function enginesFromCapture(cap, gate){ const r=new MC.RawEngine({keepMs:Infinity, gate}); for(const x of cap.raw||[]) r.push(x[0],[x[1],x[2],x[3]],[x[4],x[5],x[6]]); if(cap.bias) r.setBias(cap.bias);
+  const a=new MC.AsymEngine({raw:r, keepMs:Infinity, gate}); for(const s of cap.ori||[]) a.push(s[0],s[1],s[2],s[3],s[4]||null); return {raw:r, asym:a}; }
+function refreshCaptureLists(){
+  const opt=(c)=>`<option value="${c.id}">캡처 ${capLabel(c)}</option>`;
+  const ss=document.getElementById('snapSrc'); if(ss){ const cur=ss.value; ss.innerHTML=(rec?'<option value="session">현재 세션 (진행 중 · 시작부터 지금까지)</option>':'')+captures.map(opt).join('')+`<option value="live" id="snapLiveOpt">라이브 (최근 ${getVal('sWin')||15}초, 세션 무관)</option>`;
+    ss.value=((cur==='session'&&rec)||captures.some(c=>c.id===cur)||cur==='live')? cur : (rec?'session':(captures[0]?captures[0].id:'live')); }
+  const ts=document.getElementById('tuneSrc'); if(ts){ const cur=ts.value; ts.innerHTML=(captures.length? '' : '<option value="">(캡처 없음 — 러닝 시작→정지 또는 JSON 열기)</option>')+captures.map(opt).join(''); if(captures.some(c=>c.id===cur)) ts.value=cur; }
+  snapRangeOptions(); }
+function snapRangeOptions(){ const rs=document.getElementById('snapRange'), ss=document.getElementById('snapSrc'); if(!rs||!ss) return;
+  const cap=capOf(ss.value), cur=rs.value;
+  if(!cap){ rs.innerHTML='<option value="last">최근 창</option>'; rs.disabled=true; return; }
+  rs.disabled=false;
+  rs.innerHTML='<option value="all">세션 전체</option><option value="last">정지 전 '+cap.winSec+' s</option>'+cap.windows.map((w,i)=>`<option value="w${i}">창 ${i+1} · ${w.state==='ok'?'ok':w.state==='hold'?'보류':w.state==='not_running'?'러닝아님':'정보'}${w.reason?' '+(REASON_KO[w.reason]||w.reason):''}${w.signedSI!=null?' · '+(w.signedSI>=0?'+':'')+w.signedSI.toFixed(1)+'%':''}</option>`).join('');
+  const same=(rs._capId===ss.value); rs._capId=ss.value;   // 소스가 바뀌면 '세션 전체' 로, 같은 소스면 선택 유지
+  rs.value=(same && [...rs.options].some(o=>o.value===cur))? cur : 'all'; }
+function snapSrcChange(){ snapRangeOptions(); renderSnapshot(); }
+function snapShowCapture(id){ const ss=document.getElementById('snapSrc'); if(!ss) return; refreshCaptureLists(); ss.value=id; snapRangeOptions(); const rs=document.getElementById('snapRange'); if(rs) rs.value='all'; renderSnapshot(); }
+function overviewText(cap){ const W=cap.windows, n=W.length, cnt=s=>W.filter(w=>w.state===s).length, ok=W.filter(w=>w.state==='ok'&&w.signedSI!=null).map(w=>w.signedSI);
+  const hz=W.filter(w=>w.devHz).map(w=>w.devHz);
+  return `<b>세션 전체</b> · ${capLabel(cap)} · <b style="color:#37d67a">ok ${cnt('ok')}</b> · 보류 ${cnt('hold')} · 러닝아님 ${cnt('not_running')} · 정보 ${cnt('info')}`
+    +(ok.length? ` · SI(ok) 평균 ${(MC.mean(ok)>=0?'+':'')+MC.mean(ok).toFixed(1)}% σ ${MC.stdOf(ok).toFixed(1)}` : '')+(hz.length? ` · 수신 ${MC.mean(hz).toFixed(0)} Hz` : '')
+    +` · 위 밴드: 초록 ok / 빨강 보류 / 회색 러닝아님 / 주황 정보 · 아래: 창별 signedSI. 구간 선택으로 창 하나를 자세히 봅니다.`; }
+function drawOverview(cap, eng){ const cv=document.getElementById('snapChart'); if(!cv) return; const dpr=window.devicePixelRatio||1;
+  cv.width=Math.max(1,Math.round(cv.clientWidth*dpr)); cv.height=Math.max(1,Math.round(cv.clientHeight*dpr)); const ctx=cv.getContext('2d'), W=cv.width, H=cv.height; cv._peaks=[]; cv._snap={metric:cap.metric};
+  const t0=cap.marks.start-SNAP_PRE*1000, t1=cap.marks.stop, span=Math.max(1,t1-t0), X=t=>(t-t0)/span*W, topH=Math.round(H*0.70), BLUE='#4c8dff', ORANGE='#e0762a', GRAY='#8a93a3';
+  ctx.fillStyle='#0a0d12'; ctx.fillRect(0,0,W,H);
+  // 창: 측정 당시 평가 창(판정 밴드). 창 기록이 없으면(평가 전 정지) 평가 시작부터 창 길이로 잘라 마커만 계산
+  const win=(cap.winSec||15)*1000, wins=cap.windows.length? cap.windows : (()=>{ const o=[]; for(let a=(cap.marks.detect||cap.marks.start); a+win<=t1+1; a+=win) o.push({t0:a, t1:a+win, state:null}); return o; })();
+  for(const w of wins){ if(!w.state) continue; ctx.fillStyle= w.state==='ok'?'rgba(55,214,122,0.20)': w.state==='hold'?'rgba(255,90,90,0.20)': w.state==='not_running'?'rgba(120,140,180,0.16)':'rgba(255,180,84,0.22)';
+    ctx.fillRect(X(w.t0),0,Math.max(1,X(w.t1)-X(w.t0)),topH); }
+  // 파형(평균 제거): 픽셀당 샘플 ≤3 이면 폴리라인, 더 많으면 min–max 포락선(채움)+픽셀 평균선
+  const src=eng.asym._source(cap.metric, cap.marks.detect||cap.marks.start, t1, t0), s=src.samples.filter(x=>x.t>=t0&&x.t<=t1&&Number.isFinite(x.v));
+  const pt=22*dpr;   // 상단 범례/라벨 띠 — 파형은 그 아래에
+  let m=0, amp=0.5, Y=v=>(pt+topH)/2;
+  if(s.length>1){ m=MC.mean(s.map(x=>x.v)); for(const x of s){ const a=Math.abs(x.v-m); if(a>amp) amp=a; } amp*=1.08; Y=v=>pt+(topH-pt)*(1-(v-m+amp)/(2*amp));
+    ctx.strokeStyle='#3a4553'; ctx.setLineDash([4*dpr,4*dpr]); ctx.beginPath(); ctx.moveTo(0,Y(m)); ctx.lineTo(W,Y(m)); ctx.stroke(); ctx.setLineDash([]);
+    if(s.length/W<=3){ ctx.strokeStyle='#c8d0dc'; ctx.lineWidth=1.3*dpr; ctx.beginPath(); s.forEach((x,i)=>{ const xx=X(x.t), yy=Y(x.v); i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy); }); ctx.stroke(); }
+    else { const n=Math.ceil(W), mn=new Float64Array(n).fill(Infinity), mx=new Float64Array(n).fill(-Infinity), sm=new Float64Array(n), cn=new Uint32Array(n);
+      for(const x of s){ const k=Math.min(n-1, Math.max(0, Math.floor(X(x.t)))); if(x.v<mn[k]) mn[k]=x.v; if(x.v>mx[k]) mx[k]=x.v; sm[k]+=x.v; cn[k]++; }
+      ctx.fillStyle='rgba(200,208,220,0.30)'; ctx.beginPath(); let st=false;
+      for(let k=0;k<n;k++){ if(!cn[k]) continue; const yy=Y(mx[k]); st? ctx.lineTo(k+0.5,yy) : ctx.moveTo(k+0.5,yy); st=true; }
+      for(let k=n-1;k>=0;k--){ if(cn[k]) ctx.lineTo(k+0.5, Y(mn[k])); } ctx.closePath(); ctx.fill();
+      ctx.strokeStyle='#c8d0dc'; ctx.lineWidth=1*dpr; ctx.beginPath(); st=false; for(let k=0;k<n;k++){ if(!cn[k]) continue; const yy=Y(sm[k]/cn[k]); st? ctx.lineTo(k+0.5,yy) : ctx.moveTo(k+0.5,yy); st=true; } ctx.stroke(); }
+    // 로브 마커: 창마다 현재 게이트로 스냅샷 분석 → 극값 시각의 파형 값 위에 표시(짝=채움, 그 외=회색 속빈; 밀집하면 짝만)
+    const tArr=s.map(x=>x.t), valAt=t=>{ let lo=0, hi=tArr.length-1; while(lo<hi){ const mid=(lo+hi)>>1; if(tArr[mid]<t) lo=mid+1; else hi=mid; } const j=(lo>0 && Math.abs(tArr[lo-1]-t)<Math.abs(tArr[lo]-t))? lo-1 : lo; return s[j].v; };
+    const all=[]; for(const w of wins){ const sn=eng.asym.snapshot(cap.metric, {showT0:w.t0, showT1:w.t1, aT0:w.t0, aT1:w.t1}); if(sn) for(const p of sn.peaks) all.push(p); }
+    const dense=all.length>250, r=(dense?2.2:3.4)*dpr;
+    for(const p of all){ if(dense && p.role!=='paired') continue; const x=X(p.t), yy=Y(valAt(p.t)), side=LR(p.sign);
+      ctx.beginPath(); ctx.arc(x,yy,r,0,7); if(p.role==='paired'){ ctx.fillStyle=p.sign>0?BLUE:ORANGE; ctx.fill(); } else { ctx.strokeStyle=GRAY; ctx.lineWidth=1*dpr; ctx.stroke(); }
+      cv._peaks.push({cx:x/dpr, cy:yy/dpr, v:p.v, side, role:p.role}); }
+    ctx.font='bold '+(12*dpr)+'px sans-serif'; ctx.textAlign='left'; ctx.fillStyle=BLUE; ctx.fillText('● '+LR(1), 8*dpr, 16*dpr); ctx.fillStyle=ORANGE; ctx.fillText('● '+LR(-1), 44*dpr, 16*dpr); ctx.fillStyle=GRAY; ctx.fillText(dense?'(짝만 표시)':'○ 제외', 80*dpr, 16*dpr);
+    ctx.fillStyle='#7b8494'; ctx.font=(11*dpr)+'px sans-serif'; ctx.textAlign='right'; ctx.fillText((cap.metric==='yaw_rate'?'수직축 각속도':'roll·사람기준')+' · 단위 '+UNIT(cap.metric)+' · ±'+amp.toFixed(amp<10?1:0)+' · 평균 '+m.toFixed(1)+(src.srcYaw==='euler'?' · 오일러폴백':''), W-8*dpr, 16*dpr); }
+  const vline=(t,col,lab)=>{ if(!t) return; const x=X(t); ctx.strokeStyle=col; ctx.lineWidth=1.6*dpr; ctx.setLineDash([5*dpr,3*dpr]); ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,topH); ctx.stroke(); ctx.setLineDash([]);
+    const r=x>W-50*dpr; ctx.fillStyle=col; ctx.font='bold '+(11*dpr)+'px sans-serif'; ctx.textAlign=r?'right':'left'; ctx.fillText(lab, x+(r?-4*dpr:4*dpr), 30*dpr); };
+  vline(cap.marks.start,'#37d67a','▶시작'); vline(cap.marks.detect,'#4c8dff','평가'); vline(cap.marks.stop,'#ff5a5a','■정지');
+  ctx.strokeStyle='#222b36'; ctx.lineWidth=1*dpr; ctx.strokeRect(0.5,0.5,W-1,topH-1);
+  const by0=topH, bh=H-topH; ctx.fillStyle='#0c1017'; ctx.fillRect(0,by0,W,bh); ctx.strokeStyle='#222b36'; ctx.strokeRect(0.5,by0+0.5,W-1,bh-1);
+  const sis=cap.windows.filter(w=>w.signedSI!=null).map(w=>Math.abs(w.signedSI)), smax=Math.max(10, ...sis), zy=by0+bh*0.55, hmax=bh*0.55-16*dpr;
+  ctx.strokeStyle='#3a4553'; ctx.beginPath(); ctx.moveTo(0,zy); ctx.lineTo(W,zy); ctx.stroke();
+  for(const w of cap.windows){ if(w.signedSI==null) continue; const x0=X(w.t0), x1=X(w.t1), h=(w.signedSI/smax)*hmax;
+    ctx.fillStyle= w.state==='ok'? (w.signedSI>=0?BLUE:ORANGE) : '#5b6472'; ctx.fillRect(x0+1, Math.min(zy,zy-h), Math.max(1,x1-x0-2), Math.max(1,Math.abs(h))); }
+  ctx.fillStyle='#8a93a3'; ctx.font=(11*dpr)+'px sans-serif'; ctx.textAlign='left'; ctx.fillText('창별 signedSI (±'+smax.toFixed(0)+'%, 회색=ok 아님) · '+cap.windows.length+'창', 8*dpr, by0+14*dpr); }
+function downloadSnapJson(){ const ss=document.getElementById('snapSrc'); const id=ss? ss.value : 'live'; if(id==='live'){ downloadWindowJson(); return; }
+  const cap=capOf(id); if(!cap){ alert('캡처 없음'); return; }
+  const b=new Blob([JSON.stringify(Object.assign({}, cap, {live:undefined}))],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+  a.download='session_'+(cap.device||'dev')+'_'+cap.metric+'_'+cap.date.replace(/[:.]/g,'-').slice(0,19)+'.json'; a.click(); log('세션 JSON 저장: '+capLabel(cap),'rx'); }
+function importCapture(o, fileName){ if(!o || o.schema!==1 || !Array.isArray(o.ori)) return null;
+  const c=Object.assign({kind:'window', windows:[], marks:null, bias:null, note:'', durSec:0}, o); c.id='cap'+Date.now()+'_'+Math.random().toString(36).slice(2,6); c.imported=true;
+  if(!c.marks){ const t0=c.ori.length? c.ori[0][0] : 0, t1=c.ori.length? c.ori[c.ori.length-1][0] : 0; c.marks={start:t0+SNAP_PRE*1000, detect:null, stop:t1}; c.durSec=(t1-t0)/1000; }
+  if(!c.note && fileName) c.note=fileName.replace(/\.json$/i,''); if(!c.date) c.date=new Date().toISOString(); if(!c.winSec) c.winSec=getVal('sWin')||15;
+  captures.unshift(c); while(captures.length>CAP_MAX) captures.pop(); refreshCaptureLists(); return c; }
+
+// ===================== 게이트 튜닝(설정 탭): 캡처 데이터를 현재 값으로 다시 판정해 예상 결과 표시 =====================
+const TUNE_PARAMS=[ ['winSec','검출 창 (s)',1], ['acc.enterStdG','러닝 진입 std|a| (g)',0.01], ['acc.exitStdG','러닝 유지 std|a| (g)',0.01], ['acc.minStrength','스텝 주기성 ≥',0.05], ['acc.blockFrac','러닝 블록 비율 ≥',0.05],
+  ['acc.stepMin','스텝 최소 (Hz)',0.1], ['acc.stepMax','스텝 최대 (Hz)',0.1], ['stationaryMaxFrac','정지 구간 비율 ≤',0.05], ['minStrength','지표 주기성 ≥',0.05], ['minRateStd','최소 진폭 yaw_rate (dps)',0.5],
+  ['minAngleStd','최소 진폭 roll (°)',0.1], ['rampRatio','램프(앞/뒤 std 비) ≤',0.1], ['turnMeanDps','선회 평균 (dps) ≤',1], ['turnSegDps','선회 2 s 구간 (dps) ≤',1], ['lobeK','로브 불감대 k·std',0.01],
+  ['minPairs','최소 쌍',1], ['pairMin','짝 간격 최소 (×T)',0.05], ['pairMax','짝 간격 최대 (×T)',0.05], ['siCapPct','|SI| 상한 (%)',5] ];
+let tuneOver={}, tuneRows=[], tuneEng=null, tuneCap=null, tuneMetricSel='yaw_rate', tuneSelIdx=0;
+function gget(path, obj){ return path.split('.').reduce((o,k)=>(o==null? undefined : o[k]), obj); }
+function gset(obj, path, v){ const ks=path.split('.'); let o=obj; for(const k of ks.slice(0,-1)){ o[k]=o[k]||{}; o=o[k]; } o[ks[ks.length-1]]=v; }
+function tuneRenderParams(){ const host=document.getElementById('tuneParams'); if(!host) return;
+  host.innerHTML=TUNE_PARAMS.map(([p,lab,st])=>{ const v=gget(p, tuneOver), base=gget(p, MC.GATE), ch=(v!=null && v!==base);
+    return `<label title="${p} (기본 ${base})">${lab}<input type="number" step="${st}" value="${ch? v : base}" data-p="${p}" onchange="tuneSet(this.dataset.p, +this.value)"${ch?' style="border-color:#4c8dff"':''}></label>`; }).join(''); }
+function tuneSet(p, v){ if(!Number.isFinite(v)) return; if(v===gget(p, MC.GATE)){ const ks=p.split('.'); if(ks.length===2 && tuneOver[ks[0]]){ delete tuneOver[ks[0]][ks[1]]; if(!Object.keys(tuneOver[ks[0]]).length) delete tuneOver[ks[0]]; } else delete tuneOver[p]; }
+  else gset(tuneOver, p, v); tuneRenderParams(); tuneRun(); }
+function tuneReset(){ tuneOver={}; tuneRenderParams(); tuneRun(); }
+function tuneApplyLive(silent){ raw.cfg=MC.gateWith(tuneOver); asym.cfg=MC.gateWith(tuneOver); if(tuneOver.winSec){ const w=document.getElementById('sWin'); if(w){ w.value=tuneOver.winSec; set('hWin',w.value); } }
+  LG.event('gate',{over:tuneOver}); if(!silent) log('게이트 오버라이드 적용: '+(Object.keys(tuneOver).length? JSON.stringify(tuneOver) : '기본값'),'tx'); }
+function tuneApply(){ tuneApplyLive(false); set('tuneSum', (document.getElementById('tuneSum').textContent||'')+' · 라이브 엔진에 적용됨'); }
+function tuneSave(){ try{ if(Object.keys(tuneOver).length) localStorage.setItem('mc.gate.override.v1', JSON.stringify(tuneOver)); else localStorage.removeItem('mc.gate.override.v1'); tuneApplyLive(false); log('게이트 오버라이드 저장(브라우저)','tx'); }catch(e){ alert('저장 실패: '+e.message); } }
+function tuneClearSaved(){ try{ localStorage.removeItem('mc.gate.override.v1'); }catch(e){} tuneOver={}; tuneRenderParams(); tuneApplyLive(false); tuneRun(); log('게이트 오버라이드 해제 — 기본값','tx'); }
+function tuneLoadSaved(){ try{ const s=localStorage.getItem('mc.gate.override.v1'); if(s){ const o=JSON.parse(s); if(o && typeof o==='object'){ tuneOver=o; tuneApplyLive(true); log('저장된 게이트 오버라이드 적용: '+s,'rx'); } } }catch(e){} }
+async function readJsonFile(file){ let blob=file; if(/\.gz$/i.test(file.name)){ if(!window.DecompressionStream) throw new Error('이 브라우저는 gz 해제 미지원'); blob=await new Response(file.stream().pipeThrough(new DecompressionStream('gzip'))).blob(); } return JSON.parse(await blob.text()); }
+function tuneImport(file){ if(!file) return; readJsonFile(file).then(o=>{
+    let c=null; if(o && o.schema==='mclog/1'){ const cs=importLog(o, file.name); if(!cs.length){ alert('로그에 구간(태그/세그먼트)이 없습니다'); return; } c=cs[0]; log('로그 가져오기: 구간 '+cs.length+'개 → 캡처 목록','rx'); }
+    else { c=importCapture(o, file.name); if(!c){ alert('창/세션/로그 JSON 형식이 아닙니다'); return; } }
+    const ts=document.getElementById('tuneSrc'); if(ts) ts.value=c.id; const tm=document.getElementById('tuneMetric'); if(tm && c.metric) tm.value=c.metric; tuneRun(); }).catch(e=>alert('열기 실패: '+e.message)); }
+// mclog/1(로거 내보내기) → 태그 구간(없으면 세그먼트)마다 캡처 객체. ori 행 [t,roll,pitch,yaw,lean,qw,qx,qy,qz] → 캡처 ori [t,roll,yaw,lean,up]
+function importLog(o, name){ const segs=o.segments||[], ev=o.events||[], out=[];
+  const tags=ev.filter(e=>e.kind==='tag'); let open=null; const ivs=[];
+  for(const e of tags){ const d=e.data||{}; if(d.action==='start'){ if(open) ivs.push({label:open.label, t0:open.t, t1:e.t}); open={label:d.label, t:e.t}; } else if(d.action==='end' && open){ ivs.push({label:open.label, t0:open.t, t1:e.t}); open=null; } }
+  if(open){ const last=segs.length? segs[segs.length-1].t1 : open.t; if(last>open.t+3000) ivs.push({label:open.label, t0:open.t, t1:last}); }
+  const list=ivs.length? ivs : segs.map((sg,i)=>({label:'seg'+(i+1), t0:sg.t0+3000, t1:sg.t1}));
+  const st=o.settings||{}, metric=st.sMetric||o.metric||'yaw_rate', winSec=+(st.sWin||15)||15, perf0=(o.app&&o.app.perfOrigin)||Date.now();
+  list.forEach((iv,i)=>{ const ori=[], raw=[]; const lo=iv.t0-SNAP_PRE*1000;
+    for(const sg of segs){ if(sg.t1<lo || sg.t0>iv.t1) continue;
+      for(const r of sg.ori||[]) if(r[0]>=lo && r[0]<=iv.t1){ const up=gravityUp(r[5],r[6],r[7],r[8]); ori.push([r[0], r[1], r[3], r[4], up.map(v=>+v.toFixed(4))]); }
+      for(const r of sg.raw||[]) if(r[0]>=lo && r[0]<=iv.t1) raw.push(r); }
+    if(ori.length<50) return;
+    const be=ev.filter(e=>e.kind==='bias' && e.t<=iv.t1).pop(), bias=(be&&be.data&&be.data.bias)|| o.bias || null;
+    const wins=ev.filter(e=>e.kind==='window' && e.data && e.data.t0!=null && e.data.t0>=iv.t0-1 && e.data.t1<=iv.t1+1).map(e=>{ const d=e.data; return {t0:d.t0, t1:d.t1, state:d.state, reason:d.reason, si:d.si, signedSI:d.signedSI, strideHz:d.cadence, nPairs:d.nPairs, E:d.harmE, coverage:d.coverage, stepSpm:d.stepSpm, running:d.running, devHz:d.devHz}; });
+    const c={schema:1, kind:'session', engine:o.app? o.app.engine : null, date:new Date(perf0+iv.t0).toISOString(), device:(o.device&&o.device.name)||'?', metric, winSec, leanAxis:o.leanAxis||[0,0,1], signFlip:!!o.signFlip, bias, note:iv.label+' #'+(i+1)+' · '+(name||'log'),
+      mode:'log', marks:{start:iv.t0, detect:iv.t0, stop:iv.t1}, windows:wins, ori, raw, expected:null, durSec:(iv.t1-iv.t0)/1000};
+    const cc=importCapture(c, null); if(cc){ cc.note=c.note; out.push(cc); } });
+  refreshCaptureLists(); return out; }
+function tuneRun(){ const ts=document.getElementById('tuneSrc'), sum=document.getElementById('tuneSum'), tab=document.getElementById('tuneTab'); if(!ts||!sum||!tab) return;
+  const cap=captures.find(c=>c.id===ts.value); if(!cap){ tab.innerHTML=''; tuneRows=[]; sum.textContent='캡처를 고르거나 JSON 을 여세요. (러닝 시작→정지 하면 자동 캡처)'; return; }
+  const metric=document.getElementById('tuneMetric').value, win=(tuneOver.winSec||cap.winSec||15)*1000, hop=5000;
+  const eng=enginesFromCapture(cap, tuneOver); tuneEng=eng; tuneCap=cap; tuneMetricSel=metric;
+  const start=(cap.marks.detect||cap.marks.start), stop=cap.marks.stop, rows=[], cnt={ok:0,hold:0,not_running:0,info:0};
+  for(let t0=start; t0+win<=stop+1; t0+=hop){ const R=eng.asym.analyzeRange(metric, t0, t0+win, undefined); cnt[R.state]=(cnt[R.state]||0)+1; rows.push({t0, t1:t0+win, R}); }
+  tuneRows=rows; const okSI=rows.filter(r=>r.R.state==='ok').map(r=>r.R.signedSI), t0s=cap.marks.start;
+  sum.innerHTML=`창 ${rows.length}개(${win/1000} s · 5 s 간격 · ${metric}): <b style="color:#37d67a">ok ${cnt.ok}</b> · 보류 ${cnt.hold} · 러닝아님 ${cnt.not_running} · 정보 ${cnt.info}`
+    +(okSI.length? ` · SI(ok) 평균 ${(MC.mean(okSI)>=0?'+':'')+MC.mean(okSI).toFixed(1)}% σ ${MC.stdOf(okSI).toFixed(1)}` : '')
+    +` · 측정 당시 ${cap.windows.length}창(ok ${cap.windows.filter(w=>w.state==='ok').length})`+(Object.keys(tuneOver).length? ' · <b style="color:#4c8dff">오버라이드 중</b>' : ' · 기본값');
+  tab.innerHTML='<tr><th>#</th><th>구간(s)</th><th style="text-align:left">상태</th><th>SI</th><th>스트라이드</th><th>쌍</th><th>spm</th><th>std g</th><th>주기성</th><th>커버리지</th></tr>'
+    +rows.map((r,i)=>{ const R=r.R; return `<tr onclick="tuneShow(${i})"><td>${i+1}</td><td>${((r.t0-t0s)/1000).toFixed(0)}–${((r.t1-t0s)/1000).toFixed(0)}</td><td style="text-align:left;color:${snapStateColor(R)}">${R.state}${R.reason?'/'+R.reason:''}</td><td>${R.signedSI==null?'':(R.signedSI>=0?'+':'')+R.signedSI.toFixed(1)}</td><td>${R.strideHz?R.strideHz.toFixed(2):''}</td><td>${R.nPairs||''}</td><td>${R.stepSpm?R.stepSpm.toFixed(0):''}</td><td>${R.accStdG!=null?R.accStdG.toFixed(2):''}</td><td>${R.strength!=null?R.strength.toFixed(2):''}</td><td>${R.coverage!=null?(R.coverage*100).toFixed(0)+'%':''}</td></tr>`; }).join('');
+  if(rows.length) tuneShow(Math.min(tuneSelIdx||0, rows.length-1)); }
+function tuneShow(i){ const r=tuneRows[i]; if(!r||!tuneEng) return; tuneSelIdx=i; document.querySelectorAll('#tuneTab tr').forEach((tr,k)=>tr.classList.toggle('sel', k===i+1));
+  const snap=tuneEng.asym.snapshot(tuneMetricSel, {showT0:r.t0-SNAP_PRE*1000, showT1:r.t1, aT0:r.t0, aT1:r.t1}); if(snap) drawSnapshot(snap, 'tuneChart'); }
+tuneLoadSaved(); tuneRenderParams(); refreshCaptureLists();
+// ===================== 로거: 연결 중 원시·자세 샘플 연속 기록(IndexedDB) + 이벤트/태그/메모 + gz 내보내기/공유 + 화면 켜짐 유지 =====================
+// 내보내기 형식 mclog/1: {app, device, settings, events:[{t,wall,kind,data}], segments:[{t0,t1, ori:[[t,roll,pitch,yaw,lean,qw,qx,qy,qz]], raw:[[t,gx,gy,gz,ax,ay,az]]}], captures:[요약]}
+window.LG={ on:false, db:null, pending:[], ori:{t:[],v:[]}, raw:{t:[],v:[]}, nOri:0, nRaw:0, bytes:0, t0:null, lastFlush:0, flushing:false, tag:null, wl:null, awakeReasons:new Set(), awakeManual:false, hzAcc:[], lastExport:null,
+  TAGS:['서기','걷기','러닝','빠른 러닝','제자리 러닝','턴','탭/충격','계단','기타'],
+  async open(){ if(this.db) return this.db; if(!window.indexedDB) throw new Error('IndexedDB 없음');
+    this.db=await new Promise((res,rej)=>{ const r=indexedDB.open('mc_logger',1);
+      r.onupgradeneeded=()=>{ const d=r.result; if(!d.objectStoreNames.contains('chunks')) d.createObjectStore('chunks',{autoIncrement:true}); if(!d.objectStoreNames.contains('events')) d.createObjectStore('events',{autoIncrement:true}); };
+      r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); r.onblocked=()=>rej(new Error('blocked')); });
+    const q=this.pending; this.pending=[]; for(const e of q) this.add('events', e).catch(()=>{}); return this.db; },
+  _tx(store, mode, fn){ return this.open().then(d=>new Promise((res,rej)=>{ const tx=d.transaction(store,mode), st=tx.objectStore(store); const rq=fn(st); tx.oncomplete=()=>res(rq&&rq.result); tx.onerror=()=>rej(tx.error); tx.onabort=()=>rej(tx.error); })); },
+  add(store, val){ return this._tx(store,'readwrite', st=>st.add(val)); }, all(store){ return this._tx(store,'readonly', st=>st.getAll()); }, count(store){ return this._tx(store,'readonly', st=>st.count()); }, clearStore(store){ return this._tx(store,'readwrite', st=>st.clear()); },
+  event(kind, data){ const rec={t:+performance.now().toFixed(1), wall:Date.now(), kind, data:(data==null? null : data)}; if(!this.db){ this.pending.push(rec); if(this.pending.length>500) this.pending.shift(); return; } this.add('events', rec).catch(()=>{}); },
+  hz(o,i){ this.hzAcc.push([o,i]); if(this.hzAcc.length>=5){ const a=this.hzAcc; this.hzAcc=[]; if(a.some(x=>x[0]||x[1])) this.event('hz',{o:a.map(x=>x[0]), i:a.map(x=>x[1])}); } },
+  toggle(){ this.on? this.stop() : this.start(); },
+  async start(){ try{ await this.open(); }catch(e){ alert('저장소 열기 실패: '+e.message); return; } this.on=true; this.t0=performance.now(); this.lastFlush=this.t0; this.nOri=0; this.nRaw=0; this.awake('logger', true);
+    this.event('logger',{action:'start', ua:navigator.userAgent, build:APP_BUILD, engine:MC.ENGINE_VER, url:location.href, perfOrigin:performance.timeOrigin, connected:!!ble.connected, device:devId()}); log('로거 기록 시작','tx'); this.ui(); },
+  async stop(){ this.on=false; await this.flush(true); this.event('logger',{action:'stop', nOri:this.nOri, nRaw:this.nRaw}); this.awake('logger', false); log('로거 기록 정지 (자세 '+this.nOri+' · raw '+this.nRaw+' 샘플)','tx'); this.ui(); },
+  pushOri(t, o){ const q=o.q||[1,0,0,0]; this.ori.t.push(t); this.ori.v.push(o.roll||0, o.pitch||0, o.yaw||0, o.lean||0, q[0],q[1],q[2],q[3]); this.nOri++; if(t-this.lastFlush>=5000) this.flush(false); },
+  pushRaw(t, g, a){ this.raw.t.push(t); this.raw.v.push(g[0],g[1],g[2],a[0],a[1],a[2]); this.nRaw++; },
+  async flush(force){ if(this.flushing) return; this.flushing=true; try{ this.lastFlush=performance.now();
+      for(const [kind,buf,w] of [['ori',this.ori,8],['raw',this.raw,6]]){ const n=buf.t.length; if(!n) continue; const rec={kind, t0:buf.t[0], t1:buf.t[n-1], n, w, wall:Date.now(), t:new Float64Array(buf.t), v:new Float32Array(buf.v)}; buf.t=[]; buf.v=[]; this.bytes+=n*(8+4*w); await this.add('chunks', rec); }
+    }catch(e){ console.error(e); log('로거 저장 실패: '+e.message,'er'); } finally{ this.flushing=false; if(this.on||force) this.ui(); } },
+  tagStart(label){ const now=performance.now(); if(this.tag){ this.event('tag',{label:this.tag.label, action:'end'}); } this.tag={label, t:now}; this.event('tag',{label, action:'start'}); log('태그 시작: '+label,'tx'); this.ui(); },
+  tagEnd(){ if(!this.tag) return; this.event('tag',{label:this.tag.label, action:'end'}); log('태그 끝: '+this.tag.label,'tx'); this.tag=null; this.ui(); },
+  noteFromInput(){ const el=document.getElementById('lgNote'); const text=(el.value||'').trim(); if(!text) return; this.event('note',{text}); log('메모: '+text,'tx'); el.value=''; },
+  // 화면 켜짐 유지(Screen Wake Lock): 사유 집합이 비어 있지 않으면 유지. 탭 전환/화면 복귀 시 재요청
+  async awake(reason, on){ if(on) this.awakeReasons.add(reason); else this.awakeReasons.delete(reason); const want=this.awakeManual||this.awakeReasons.size>0;
+    try{ if(want && !this.wl && 'wakeLock' in navigator && document.visibilityState==='visible'){ this.wl=await navigator.wakeLock.request('screen'); this.wl.addEventListener('release', ()=>{ this.wl=null; this.ui(); }); }
+      else if(!want && this.wl){ await this.wl.release(); this.wl=null; } }catch(e){ log('화면 유지 실패: '+e.message,'er'); }
+    this.ui(); },
+  toggleAwake(){ this.awakeManual=!this.awakeManual; this.awake('manual', this.awakeManual); },
+  ui(){ const b=document.getElementById('lgBtn'); if(!b) return; b.textContent=this.on? '■ 기록 정지' : '● 기록 시작'; b.className=this.on? 'btn-bad' : 'btn-p';
+    const el=(this.on && this.t0!=null)? (performance.now()-this.t0)/1000 : 0;
+    set('lgStat', this.on? `기록 중 ${Math.floor(el/60)}분 ${Math.floor(el%60)}초 · 자세 ${this.nOri} · raw ${this.nRaw} 샘플${ble.connected?'':' · (미연결 — 샘플 없음)'}` : '대기 (이벤트는 항상 기록)');
+    set('lgTag', this.tag? this.tag.label : '없음');
+    const aw=document.getElementById('lgAwake'); if(aw){ aw.textContent=this.wl? '켜짐' : (this.awakeManual? '요청 중' : '끔'); } set('lgAwakeTxt', ('wakeLock' in navigator)? (this.wl? '화면이 꺼지지 않습니다' : '') : '이 브라우저는 wake lock 미지원 — 화면 꺼짐 시간을 길게 설정하세요');
+    const host=document.getElementById('lgTags'); if(host && !host.children.length){ host.innerHTML=this.TAGS.map(t=>`<button onclick="LG.tagStart('${t}')">${t}</button>`).join('')+'<button class="end" onclick="LG.tagEnd()">구간 끝</button>'; }
+    if(host) host.querySelectorAll('button').forEach(bt=>bt.classList.toggle('on', !!this.tag && bt.textContent===this.tag.label));
+    set('lgBuild', APP_BUILD); set('lgEngine', MC.ENGINE_VER); set('buildTxt', APP_BUILD+' · '+MC.ENGINE_VER); this.sizeUi(); },
+  async sizeUi(){ try{ const nC=await this.count('chunks'), nE=await this.count('events'); let est=''; if(navigator.storage&&navigator.storage.estimate){ const q=await navigator.storage.estimate(); est=' · 저장소 사용 '+((q.usage||0)/1048576).toFixed(1)+' MB'; } set('lgSize', `청크 ${nC} · 이벤트 ${nE} · 이번 기록 ${(this.bytes/1048576).toFixed(1)} MB${est}`); }catch(e){} },
+  settingsSnapshot(){ const o={}; document.querySelectorAll('#p-set input, #p-set select').forEach(el=>{ if(el.id) o[el.id]=(el.type==='checkbox'? el.checked : el.value); }); return o; },
+  async build(){ const chunks=await this.all('chunks'); chunks.sort((a,b)=>a.t0-b.t0 || (a.kind<b.kind?-1:1)); const segs=[]; let cur=null;
+    for(const c of chunks){ if(!cur || c.t0-cur.t1>2000){ cur={t0:c.t0, t1:c.t1, ori:[], raw:[]}; segs.push(cur); } cur.t1=Math.max(cur.t1, c.t1);
+      const dst=cur[c.kind], w=c.w; for(let i=0;i<c.n;i++){ const row=[+c.t[i].toFixed(1)]; for(let k=0;k<w;k++) row.push(+c.v[i*w+k].toFixed(k>=(w===8?4:0)? 4 : 3)); dst.push(row); } }
+    for(const sg of segs){ sg.ori.sort((a,b)=>a[0]-b[0]); sg.raw.sort((a,b)=>a[0]-b[0]); }
+    return segs; },
+  async exportLog(share){ try{ log('로그 내보내기 준비…','tx'); if(this.on) await this.flush(true); const segs=await this.build(); const events=await this.all('events');
+      const o={schema:'mclog/1', exportedAt:new Date().toISOString(), app:{build:APP_BUILD, engine:MC.ENGINE_VER, ua:navigator.userAgent, url:location.href, perfOrigin:performance.timeOrigin}, device:{name:devId()},
+        settings:this.settingsSnapshot(), gateOverride:tuneOver, leanAxis:leanAxis.slice(), signFlip:!!cfg.signFlip, bias:raw.bias.slice(), metric:cfg.metric,
+        oriCols:['t','roll','pitch','yaw','lean','qw','qx','qy','qz'], rawCols:['t','gx','gy','gz','ax','ay','az'],
+        events:events.map(e=>({t:e.t, wall:e.wall, kind:e.kind, data:e.data})), segments:segs,
+        captures:captures.map(c=>({id:c.id, date:c.date, metric:c.metric, winSec:c.winSec, marks:c.marks, windows:c.windows, expected:c.expected, durSec:c.durSec, note:c.note, mode:c.mode}))};
+      const json=JSON.stringify(o); let blob=new Blob([json],{type:'application/json'}); const d=new Date(), pad=n=>String(n).padStart(2,'0');
+      let name='mclog_'+devId()+'_'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes())+'.json';
+      if(window.CompressionStream){ try{ const gz=await new Response(blob.stream().pipeThrough(new CompressionStream('gzip'))).blob(); blob=new Blob([gz],{type:'application/gzip'}); name+='.gz'; }catch(e){ log('gzip 실패 — 비압축 저장: '+e.message,'er'); } }
+      this.lastExport={blob,name}; const kb=(blob.size/1024).toFixed(0);
+      if(share){ if(navigator.share && navigator.canShare){ const file=new File([blob], name, {type:blob.type});
+          if(navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file], title:name}); log('공유 완료: '+name+' ('+kb+' KB)','rx'); return; }catch(e){ if(e.name==='AbortError') return; log('공유 실패('+e.message+') — 파일 저장으로 대체','er'); } }
+          else log('파일 공유 미지원 — 파일 저장','er'); } else log('이 브라우저는 공유 미지원 — 파일 저장','er'); }
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 60000);
+      log('로그 저장: '+name+' ('+kb+' KB, 구간 '+segs.length+' · 이벤트 '+events.length+')','rx');
+    }catch(e){ log('내보내기 실패: '+e.message,'er'); console.error(e); } },
+  async clearAll(){ if(!confirm('저장된 로그(샘플·이벤트)를 모두 지울까요? 내보내기 전이면 취소하세요.')) return; try{ if(this.on) await this.stop(); await this.clearStore('chunks'); await this.clearStore('events'); this.bytes=0; this.nOri=0; this.nRaw=0; log('로그 지움','tx'); this.event('logger',{action:'cleared'}); }catch(e){ alert('지우기 실패: '+e.message); } this.ui(); }
+};
+LG.ui();   // 빌드/엔진 표시 등은 저장소와 무관하게 즉시
+LG.open().then(()=>{ LG.event('app',{action:'load', build:APP_BUILD, engine:MC.ENGINE_VER, ua:navigator.userAgent, url:location.href, perfOrigin:performance.timeOrigin}); LG.ui(); }).catch(e=>console.warn('logger db', e));
+window.addEventListener('error', e=>{ LG.event('error',{msg:String(e.message), src:String(e.filename||'').split('/').pop(), line:e.lineno}); });
+window.addEventListener('unhandledrejection', e=>{ LG.event('error',{msg:String((e.reason&&e.reason.message)||e.reason)}); });
+document.addEventListener('visibilitychange', ()=>{ LG.event('visibility',{state:document.visibilityState}); if(document.visibilityState==='visible') LG.awake('_', false); });
+document.querySelectorAll('#p-set input, #p-set select').forEach(el=>el.addEventListener('change', ()=>LG.event('setting',{id:el.id, value:(el.type==='checkbox'? el.checked : el.value)})));
+setInterval(()=>{ if(LG.on) LG.ui(); }, 2000);
+// 시뮬(#sim): 합성 BLE 알림(50Hz) → 러닝 시작(서기 3s) → 평가 창 2개 → 정지 → 자동 캡처/스냅샷 전환을 headless 로 점검
+if(location.hash==='#sim'||location.hash==='#logsim'){ (function(){ const LS=(location.hash==='#logsim'); ble.connected=true; ble.chars.ctrl={writeValue:async()=>{}}; let i=0;
+    const mk=vals=>{ const dv=new DataView(new ArrayBuffer(vals.length*2)); vals.forEach((v,k)=>dv.setInt16(k*2, Math.round(v), true)); return dv; };
+    const iv=setInterval(()=>{ const tt=i/50; i++; const run=tt>5, lean=run? 5*Math.sin(2*Math.PI*1.25*tt) : 0, h=lean/2*Math.PI/180;
+      onOri(mk([lean*100, 0, 0, Math.cos(h)*16384, Math.sin(h)*16384, 0, 0]));
+      const ph=2*Math.PI*2.5*tt, an=run? 1+0.5*Math.sin(ph)+0.3*Math.pow(Math.max(0,Math.sin(ph)),6) : 1, s1=Math.sin(2*Math.PI*1.25*tt), gz=run? 30*s1*(s1>0?1.2:1) : 0;
+      onImu(mk([0, 0, gz/0.07, 0, 0, an/0.000488])); }, 20);
+    const out={};
+    if(LS) setTimeout(()=>{ LG.start(); LG.tagStart('러닝'); }, 500);
+    setTimeout(()=>{ runStart(); out.afterStart=document.getElementById('snapSrc').value; }, 1000);
+    setTimeout(()=>{ renderSnapshot(); out.mid=document.getElementById('snapSrc').value+' | '+document.getElementById('snapTxt').textContent.slice(0,60); }, 45000);
+    setTimeout(()=>{ runStop(); clearInterval(iv); const ss=document.getElementById('snapSrc'); out.end=ss.value+' caps='+captures.length+' win='+(captures[0]?captures[0].windows.map(w=>w.state).join(','):'-')+' | '+document.getElementById('snapTxt').textContent.slice(0,80);
+      document.title='SIM start='+out.afterStart+' || mid='+out.mid+' || end='+out.end;
+      if(LS){ (async()=>{ LG.tagEnd(); LG.noteFromInput(); await LG.stop(); const segs=await LG.build(), ev=await LG.all('events'); const kinds={}; for(const e of ev) kinds[e.kind]=(kinds[e.kind]||0)+1;
+        const o={schema:'mclog/1', app:{build:APP_BUILD, engine:MC.ENGINE_VER, perfOrigin:performance.timeOrigin}, device:{name:'sim'}, settings:LG.settingsSnapshot(), bias:raw.bias, leanAxis, events:ev, segments:segs, captures:[]}; const caps=importLog(o,'sim');
+        document.body.insertAdjacentHTML('beforeend','<pre id="mclog" hidden>'+JSON.stringify(o).replace(/</g,'&lt;')+'</pre>');
+        document.title='LOGSIM segs='+segs.length+' ori='+segs.reduce((a,s)=>a+s.ori.length,0)+' raw='+segs.reduce((a,s)=>a+s.raw.length,0)+' events='+ev.length+' '+JSON.stringify(kinds)+' import='+caps.length+(caps[0]? ' cap0 ori='+caps[0].ori.length+' win='+caps[0].windows.length : ''); })(); } }, 60000); })(); }
+// 데모(#demo): 합성 세션 캡처를 만들어 캡처·스냅샷·튜닝 경로를 headless 로 점검
+if(location.hash==='#demo'){ (function(){ const n=40*50, ori=[], rawA=[]; let seed=7; const rnd=()=>{ seed=(seed*1664525+1013904223)>>>0; return seed/4294967296; };
+    for(let i=0;i<n;i++){ const t=i*20, tt=i/50, run=tt>4; const lean=run? 5*Math.sin(2*Math.PI*1.25*tt)*(tt<7?(tt-4)/3:1)+0.3*(rnd()-0.5) : 0.2*(rnd()-0.5);
+      const ph=2*Math.PI*2.5*tt, an=run? 1+0.5*Math.sin(ph)+0.3*Math.pow(Math.max(0,Math.sin(ph)),6)+0.01*(rnd()-0.5) : 1+0.01*(rnd()-0.5);
+      const gz=run? 30*Math.sin(2*Math.PI*1.25*tt)*(tt<7?(tt-4)/3:1)*(1+0.2*(Math.sin(2*Math.PI*1.25*tt)>0)) : 0;
+      ori.push([t,0,0,+lean.toFixed(3),[0,0,1]]); rawA.push([t,0,0,+gz.toFixed(2),0,0,+an.toFixed(4)]); }
+    const cap={schema:1, kind:'session', id:'demo', engine:MC.ENGINE_VER, date:new Date().toISOString(), device:'demo', metric:'yaw_rate', winSec:15, leanAxis:[0,0,1], signFlip:false, bias:[0,0,0], note:'demo', mode:'run',
+      marks:{start:1000, detect:4000, stop:n*20-20}, windows:[], ori, raw:rawA, expected:null, durSec:n*20/1000};
+    const e=enginesFromCapture(cap,null); for(let t0=4000; t0+15000<=cap.marks.stop; t0+=15000){ const R=e.asym.analyzeRange('yaw_rate', t0, t0+15000, undefined); cap.windows.push({t0, t1:t0+15000, state:R.state, reason:R.reason, si:R.si, signedSI:R.signedSI, strideHz:R.strideHz, nPairs:R.nPairs, E:R.E, coverage:R.coverage, stepSpm:R.stepSpm, running:R.running, devHz:R.devHz}); }
+    tab('run'); captures.unshift(cap); refreshCaptureLists(); snapShowCapture('demo'); const ts=document.getElementById('tuneSrc'); ts.value='demo'; tuneRun();
+    if(location.hash==='#demo' && location.search.indexOf('win')<0){ /* 개요 유지 */ } else { const rs=document.getElementById('snapRange'); rs.value='w1'; renderSnapshot(); } document.title='DEMO '+cap.windows.map(w=>w.state).join(',')+' | '+document.getElementById('tuneSum').textContent; })(); }
+
+
+// ===================== 센서 3D 자세 뷰어 (Canvas 2D 투영, 라이브러리 無) =====================
+// 쿼터니언 규약 = 펌웨어(센서→월드): v_world = R(q)·v_sensor,  Rᵀ·ẑ = gpred(중력-up in 센서)
+function quatToR(q){ const [w,x,y,z]=q;
+  return [[1-2*(y*y+z*z), 2*(x*y-w*z),   2*(x*z+w*y)],
+          [2*(x*y+w*z),   1-2*(x*x+z*z), 2*(y*z-w*x)],
+          [2*(x*z-w*y),   2*(y*z+w*x),   1-2*(x*x+y*y)]]; }
+function mulR(R,v){ return [R[0][0]*v[0]+R[0][1]*v[1]+R[0][2]*v[2], R[1][0]*v[0]+R[1][1]*v[1]+R[1][2]*v[2], R[2][0]*v[0]+R[2][1]*v[1]+R[2][2]*v[2]]; }
+const view3d={cv:null, ctx:null};
+function init3d(){ view3d.cv=document.getElementById('att3d'); if(!view3d.cv) return; view3d.ctx=view3d.cv.getContext('2d'); setInterval(draw3d,40); }
+function draw3d(){
+  const cv=view3d.cv; if(!cv||!cv.clientWidth) return;                 // 숨겨진 탭이면 스킵
+  const dpr=window.devicePixelRatio||1;
+  if(cv.width!==Math.round(cv.clientWidth*dpr)){ cv.width=Math.round(cv.clientWidth*dpr); cv.height=Math.round(cv.clientHeight*dpr); }
+  const ctx=view3d.ctx, W=cv.width, H=cv.height;
+  ctx.fillStyle='#0a0d12'; ctx.fillRect(0,0,W,H);
+  const q=ori.q||[1,0,0,0], R=quatToR(q);
+  // 카메라: 월드 Z=위. 방위 -35°, 앙각 25°, 약한 원근
+  const az=-35*Math.PI/180, el=25*Math.PI/180, ca=Math.cos(az), sa=Math.sin(az), ce=Math.cos(el), se=Math.sin(el);
+  const S=Math.min(W,H)*0.30, D=7;
+  const proj=p=>{ const x1=p[0]*ca-p[1]*sa, y1=p[0]*sa+p[1]*ca;      // 방위(Z축) 회전
+    const up=p[2]*ce+y1*se, dep=y1*ce-p[2]*se, k=D/(D+dep);           // 앙각: 멀수록 위로, 원근
+    return [W/2+x1*S*k, H*0.56-up*S*k, dep]; };
+  const line=(a,b,col,wd)=>{ const A=proj(a),B=proj(b); ctx.strokeStyle=col; ctx.lineWidth=wd*dpr; ctx.beginPath(); ctx.moveTo(A[0],A[1]); ctx.lineTo(B[0],B[1]); ctx.stroke(); };
+  // 지면 격자(월드 XY, z=-1.4) + 위 화살표
+  const gz=-1.4; ctx.setLineDash([]);
+  for(let i=-2;i<=2;i++){ line([i,-2,gz],[i,2,gz],'#1c232e',1); line([-2,i,gz],[2,i,gz],'#1c232e',1); }
+  line([2.4,-2,gz],[2.4,-2,gz+1.2],'#7b8494',1.5);
+  { const t=proj([2.4,-2,gz+1.35]); ctx.fillStyle='#7b8494'; ctx.font=(11*dpr)+'px sans-serif'; ctx.textAlign='center'; ctx.fillText('위(중력↑)', t[0], t[1]); }
+  // 보드 박스 + USB 돌기 (센서 프레임 → 월드 회전 → 면 깊이 정렬, 간단 음영)
+  const faces=[];
+  const box=(c,h,cols)=>{ const v=[]; for(let i=0;i<8;i++) v.push(mulR(R,[c[0]+((i&1)?h[0]:-h[0]), c[1]+((i&2)?h[1]:-h[1]), c[2]+((i&4)?h[2]:-h[2])]));
+    const F=[[[4,5,7,6],[0,0,1],cols.top],[[0,2,3,1],[0,0,-1],cols.bot],[[1,3,7,5],[1,0,0],cols.side],[[0,4,6,2],[-1,0,0],cols.side],[[2,6,7,3],[0,1,0],cols.side],[[0,1,5,4],[0,-1,0],cols.side]];
+    for(const [idx,n,col] of F){ const pts=idx.map(i=>v[i]), nw=mulR(R,n), L=[0.35,-0.5,0.79];
+      const sh=0.55+0.45*Math.max(0, nw[0]*L[0]+nw[1]*L[1]+nw[2]*L[2]);
+      const P=pts.map(proj), dep=P.reduce((s,p)=>s+p[2],0)/4;
+      faces.push({P, dep, col:'rgb('+col.map(c=>Math.round(c*sh)).join(',')+')'}); } };
+  box([0,0,0],[1.05,0.875,0.09],{top:[64,130,230], bot:[40,48,62], side:[110,122,140]});   // XIAO 21×17.5mm 비율
+  const usb=(document.getElementById('usbPos')||{}).value||'+x';
+  const uc={'-x':[-1.2,0,0.04],'+x':[1.2,0,0.04],'-y':[0,-1.02,0.04],'+y':[0,1.02,0.04]}[usb];
+  const uh=(usb[1]==='x')?[0.16,0.3,0.13]:[0.3,0.16,0.13];
+  box(uc,uh,{top:[170,175,185], bot:[90,95,105], side:[130,136,148]});
+  faces.sort((a,b)=>b.dep-a.dep);
+  for(const f of faces){ ctx.fillStyle=f.col; ctx.strokeStyle='#0a0d12'; ctx.lineWidth=1*dpr; ctx.beginPath(); ctx.moveTo(f.P[0][0],f.P[0][1]); for(let i=1;i<4;i++) ctx.lineTo(f.P[i][0],f.P[i][1]); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+  // 센서 축 화살표 X빨강 Y초록 Z파랑(윗면 법선)
+  const axes=[[[1.7,0,0],'#ff5a5a','X'],[[0,1.7,0],'#37d67a','Y'],[[0,0,1.4],'#4c8dff','Z']];
+  ctx.font='bold '+(12*dpr)+'px sans-serif'; ctx.textAlign='center';
+  for(const [a,col,lab] of axes){ line([0,0,0],mulR(R,a),col,2.2); const t=proj(mulR(R,a.map(v=>v*1.13))); ctx.fillStyle=col; ctx.fillText(lab,t[0],t[1]+4*dpr); }
+  // 수치 표시
+  ctx.fillStyle='#8a93a3'; ctx.font=(11*dpr)+'px monospace'; ctx.textAlign='left';
+  ctx.fillText('q(w,x,y,z)= '+q.map(v=>v.toFixed(3)).join(' '), 8*dpr, 16*dpr);
+  const upv=gravityUp(q[0],q[1],q[2],q[3]);
+  ctx.fillText('up(센서)= '+upv.map(v=>v.toFixed(2)).join(' ')+'   roll '+ori.roll.toFixed(1)+'° pitch '+ori.pitch.toFixed(1)+'° yaw '+ori.yaw.toFixed(1)+'°', 8*dpr, 31*dpr);
+}
+init3d();
+</script>
+</body>
+</html>
