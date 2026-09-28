@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="20260927-2013">
+<meta name="build" content="20260928-1445">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>MotionCue-R 테스터</title>
 <style>
@@ -75,9 +75,11 @@
   .log{background:#0a0d12; border:1px solid var(--line); border-radius:10px; padding:8px; height:180px; overflow-y:auto; font:11px/1.5 ui-monospace,Consolas,monospace; white-space:pre-wrap; color:#b8c4d4}
   .log .tx{color:#7fb2ff} .log .rx{color:#8be89b} .log .er{color:#ff8b8b}
   .hint{font-size:12px; color:var(--tx2); margin:4px 0}
+  .lrow{display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--line)} .lrow:last-child{border-bottom:0}
+  .lrow .nm{flex:1; font-size:13px; min-width:0} .lrow .st{font-size:11px; color:var(--tx2)} .lrow button{padding:6px 10px; font-size:12px; white-space:nowrap}
   .tag{font-size:10px; padding:2px 6px; border-radius:6px; background:var(--warn); color:#3a2a00; font-weight:700}
   nav{position:fixed; bottom:0; left:0; right:0; max-width:520px; margin:0 auto; background:#131822; border-top:1px solid var(--line);
-      display:grid; grid-template-columns:repeat(5,1fr); z-index:20}
+      display:grid; grid-template-columns:repeat(6,1fr); z-index:20}
   nav button{background:none; color:var(--tx2); padding:8px 0 10px; border-radius:0; display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11px}
   nav button.sel{color:var(--pri)} nav .ni{font-size:20px}
   .estop-banner{display:none; position:sticky; top:0; z-index:30; background:var(--bad); color:#fff; padding:10px 14px;
@@ -109,7 +111,9 @@
     <h2>연결</h2>
     <div class="card">
       <p class="hint">Chrome/Edge(데스크톱·안드로이드)에서 동작합니다. 장치 전원을 켜고 연결하세요.</p>
-      <button class="btn-p full" id="connBtn" onclick="toggleConn()">🔗 MotionCue 연결</button>
+      <div id="linkRows"></div>
+      <button class="btn-p full mt" id="connBtn" onclick="connectAll()">🔗 저장된 모듈 모두 연결</button>
+      <div class="hint">처음엔 부위 버튼으로 목록에서 모듈을 고르세요(모듈당 1회, 이 브라우저에 저장). 다리 모듈은 연결되면 짧게 진동해 어느 것인지 알려줍니다. 저장된 모듈은 브라우저가 지원하면 선택창 없이 다시 연결됩니다.</div>
       <div class="row mt"><span class="lbl">수신 · 러닝감지(가속도)</span><span class="val" style="font-size:12px">자세 <span id="oHz">0</span> Hz · raw <span id="iHz">0</span> Hz · <b id="runLive">–</b></span></div>
       <div class="hint">둘 다 약 50 Hz 여야 정상(raw 0 이면 원시 IMU 구독 실패). 러닝감지는 |a| 표준편차(g)·스텝 spm·주기성으로 표시. 빌드 <span id="buildTxt">–</span></div>
     </div>
@@ -257,6 +261,9 @@
       <div class="row"><span class="lbl">휴지 Off (초)</span><input type="number" id="mOff" value="10" min="1" max="120"></div>
       <div class="row"><span class="lbl">지속 시간 (분)</span><input type="number" id="mMin" value="5" min="1" max="60"></div>
       <div class="row"><span class="lbl">진동 세기 (%)</span><input type="number" id="mInt" value="60" min="0" max="100"></div>
+      <div class="row"><span class="lbl">펄스 주파수 (Hz)</span><select id="mFreq"><option value="10">10</option><option value="20">20</option><option value="30">30</option><option value="40">40</option><option value="50" selected>50</option><option value="60">60</option><option value="70">70</option><option value="80">80</option><option value="90">90</option><option value="100">100</option></select></div>
+      <div class="row"><span class="lbl">펄스 듀티 (%)</span><select id="mDuty"><option value="0">off</option><option value="20">20</option><option value="40">40</option><option value="60">60</option><option value="80">80</option><option value="100" selected>100 (연속)</option></select></div>
+      <div class="row"><span class="lbl">자극 부위</span><select id="mSide"><option value="좌">왼다리</option><option value="우">오른다리</option><option value="양쪽" selected>양쪽</option></select></div>
     </div>
     <div class="card">
       <div class="state" id="mState">대기<small id="mStateSub">–</small></div>
@@ -265,7 +272,7 @@
         <button class="btn-p" id="manStart" onclick="manStart()">▶ 자극 시작</button>
         <button class="btn-bad" id="manStop" onclick="manStop()" disabled>■ 정지</button>
       </div>
-      <button class="btn-g full mt" id="buzz" onmousedown="motor(getVal('mInt'))" onmouseup="motor(0)" ontouchstart="motor(getVal('mInt'))" ontouchend="motor(0)">누르는 동안 진동 (테스트)</button>
+      <button class="btn-g full mt" id="buzz" onmousedown="stim(manSide(),true,manParams())" onmouseup="stim(manSide(),false)" ontouchstart="stim(manSide(),true,manParams())" ontouchend="stim(manSide(),false)">누르는 동안 진동 (테스트)</button>
       <button class="btn-estop full mt" onclick="estop()">🛑 긴급정지 (E-STOP)</button>
     </div>
   </section>
@@ -282,6 +289,9 @@
       <div class="row"><span class="lbl">중재 후 평가중지 (초)</span><input type="number" id="sPause" value="300" min="10" max="1800"></div>
       <div class="row"><span class="lbl">검출 실패 시 대기 (초)</span><input type="number" id="sWait" value="10" min="5" max="300"></div>
       <div class="row"><span class="lbl">진동 세기 (%)</span><input type="number" id="sInt" value="60" min="0" max="100"></div>
+      <div class="row"><span class="lbl">펄스 주파수 (Hz)</span><select id="sFreq"><option value="10">10</option><option value="20">20</option><option value="30">30</option><option value="40">40</option><option value="50" selected>50</option><option value="60">60</option><option value="70">70</option><option value="80">80</option><option value="90">90</option><option value="100">100</option></select></div>
+      <div class="row"><span class="lbl">펄스 듀티 (%)</span><select id="sDuty"><option value="0">off</option><option value="20">20</option><option value="40">40</option><option value="60">60</option><option value="80">80</option><option value="100" selected>100 (연속)</option></select></div>
+      <div class="hint">세기 = 진동 진폭(10 kHz PWM). 펄스 주파수·듀티 = 그 진동을 켜고 끄는 포락선(10~100 Hz, 듀티 100 % = 연속 = 이전과 동일, off = 자극 없음). 펌웨어 at02vib0 이상 필요 — 구형 펌웨어는 연속 진동으로 대체합니다. 설정은 이 기기 브라우저에 저장됩니다.</div>
     </div>
     <div class="card">
       <h3 style="margin-top:0">비대칭 판정</h3>
@@ -325,6 +335,8 @@
       </div>
       <button class="btn-g full mt" onclick="leanZero()">🧍 사람기준 roll 영점 (지금 자세=0)</button>
       <div class="row"><span class="lbl">좌/우 표시 반전 <span class="tag">실측 전 잠정</span></span><input type="checkbox" id="sSignFlip" onchange="cfg.signFlip=this.checked; set('asymSide','–'); if(lastSnap) drawSnapshot(lastSnap)"></div>
+      <div class="row"><span class="lbl">몸통 모듈로 대체 자극 <span class="tag">프로토타입</span></span><input type="checkbox" id="sStimTorso"></div>
+      <div class="hint">다리 모듈이 연결돼 있지 않을 때 몸통 모듈의 모터로 대신 자극합니다(1모듈 시험용). 끄면 미연결 부위는 자극을 건너뛰고 경고만 남깁니다.</div>
       <div class="row"><span class="lbl">마운트 보정 (Z축, 오일러용)</span>
         <select id="sMount" onchange="ble.ctrl([0x12, +this.value])">
           <option value="0">0° (보정 없음)</option>
@@ -390,7 +402,7 @@
   <button data-p="dev" onclick="tab('dev')"><span class="ni">🔧</span>개발</button>
 </nav>
 
-<script src="asym_engine.js?v=20260927-2013"></script>
+<script src="asym_engine.js?v=20260928-1445"></script>
 <script>
 // ===================== BLE 계층 =====================
 const UUID = {
@@ -405,68 +417,113 @@ const UUID = {
   model:'00002a24-0000-1000-8000-00805f9b34fb', fw:'00002a26-0000-1000-8000-00805f9b34fb'
 };
 const ALGO=['complementary','mahony','madgwick','eskf'];
-const ble = {
-  dev:null, srv:null, chars:{}, connected:false, imuSub:false, _q:Promise.resolve(),
-  async connect(){
-    this.dev = await navigator.bluetooth.requestDevice({
-      filters:[{namePrefix:'MotionCue'}],
-      optionalServices:[UUID.svc, UUID.battSvc, UUID.devInfo]
-    });
-    this.dev.addEventListener('gattserverdisconnected', ()=>onDisc());
-    this._userDisc=false;
-    await this._setup();
-  },
-  async _setup(){   // GATT 연결·특성·구독 (최초/재연결 공용)
-    log('연결 시도: '+this.dev.name,'tx');
+// 모듈 링크(BLE 페리페럴 1개): role T=몸통(센서: ori/imu/status/배터리/장치정보) · L/R=다리(진동자극기: ctrl/status/배터리만, ori/imu 는 요청조차 안 함)
+class Link {
+  constructor(role){ this.role=role; this.dev=null; this.srv=null; this.chars={}; this.connected=false; this.imuSub=false; this._q=Promise.resolve();
+    this.caps={pulse:false}; this.motorCmd=0; this.motorOnSince=0; this._warnedPulse=false;   // 진동: caps.pulse = Status 길이≥9 (0x14 지원 펌웨어)
+    this.bat=null; this.name=null; this._userDisc=false; this._reconnecting=false; this._tries=0; }
+  // 진동 명령. pct 0~100(진폭) · freq Hz(0=연속) · duty %(0=off, 100=연속). 펄스 지원 펌웨어면 0x14, 아니면 0x10 연속으로 폴백(1회 경고)
+  vib(pct,freq,duty){ pct=Math.max(0,Math.min(100,Math.round(pct||0))); freq=Math.max(0,Math.min(100,Math.round(freq||0))); duty=Math.max(0,Math.min(100,Math.round(duty==null?100:duty)));
+    if(duty===0) pct=0;
+    if(estopActive && pct>0) return Promise.resolve();      // E-Stop 중엔 진동 명령 억제
+    if(pct>0 && this.motorCmd===0) this.motorOnSince=Date.now();
+    this.motorCmd=pct;
+    if(this.caps.pulse) return this.ctrl([0x14, pct, freq, duty]);
+    if(pct>0 && duty<100 && !this._warnedPulse){ this._warnedPulse=true; log((LINK_KO[this.role]||'')+' 구형 펌웨어 — 펄스 미지원, 연속 진동으로 대체','er'); }
+    return this.ctrl([0x10, pct]); }
+  attach(dev){ if(this.dev===dev) return; this.dev=dev; if(dev.name) this.name=dev.name;
+    if(!dev._mcBound){ dev._mcBound=true; dev.addEventListener('gattserverdisconnected', ()=>{ const lk=Object.values(links).find(l=>l.dev===dev); if(lk) onDisc(lk); }); } }
+  // 최초 등록: 선택창(사용자 제스처 필요). 다른 부위에 저장된 모듈을 고르면 재지정 확인
+  async pair(){
+    const dev = await navigator.bluetooth.requestDevice({ filters:[{namePrefix:'MotionCue'}], optionalServices:[UUID.svc, UUID.battSvc, UUID.devInfo] });
+    const other = Object.keys(links).find(r=>r!==this.role && ((links[r].dev && links[r].dev.id===dev.id) || ((devStore[r]||{}).id===dev.id)));
+    if(other){ if(!confirm((dev.name||'이 모듈')+' 은(는) 현재 '+LINK_KO[other]+' 모듈로 저장돼 있습니다. '+LINK_KO[this.role]+' 모듈로 다시 지정할까요?')) throw new Error('취소');
+      if(links[other].connected) links[other].disconnect(); links[other].dev=null; links[other].name=null; delete devStore[other]; }
+    if(this.dev && this.dev.id!==dev.id){ if(this.connected) this.disconnect(); }
+    this.attach(dev); devStore[this.role]={id:dev.id, name:dev.name||''}; devStoreSave(); linkRows();
+    this._userDisc=false; await this._setup();
+  }
+  // 저장된 모듈 연결: getDevices() 지원 시 선택창 없이(실패하면 광고 대기 후 재시도), 미지원이면 선택창
+  async connectSaved(){
+    const sv=devStore[this.role]; if(!sv) return this.pair();
+    if(!this.dev && navigator.bluetooth.getDevices){ try{ const ds=await navigator.bluetooth.getDevices(); const d=ds.find(x=>x.id===sv.id); if(d) this.attach(d); }catch(e){ log('getDevices 실패: '+e.message,'er'); } }
+    if(this.dev){ this._userDisc=false;
+      try{ await this._setup(); return; }
+      catch(e){ log(LINK_KO[this.role]+' 연결 실패: '+e.message,'er');
+        if(this.dev.watchAdvertisements){ try{ await this._waitAdv(5000); await this._setup(); return; }catch(e2){ log(LINK_KO[this.role]+' 광고 대기 재시도 실패: '+e2.message,'er'); } }
+        throw e; } }
+    log(LINK_KO[this.role]+' 저장된 모듈('+(sv.name||sv.id)+') 자동 연결 미지원 브라우저 — 목록에서 고르세요','er');
+    return this.pair();
+  }
+  _waitAdv(ms){ return new Promise((res,rej)=>{ const ac=new AbortController(); const to=setTimeout(()=>{ ac.abort(); rej(new Error('광고 없음')); }, ms);
+      this.dev.addEventListener('advertisementreceived', ()=>{ clearTimeout(to); ac.abort(); res(); }, {once:true});
+      this.dev.watchAdvertisements({signal:ac.signal}).catch(e=>{ clearTimeout(to); rej(e); }); }); }
+  async _setup(){   // GATT 연결·특성·구독 (최초/재연결 공용). 역할별로 구독 범위가 다름
+    const leg=(this.role!=='T');
+    log('연결 시도: '+(this.dev.name||this.name||'?')+' ('+LINK_KO[this.role]+')','tx');
     const g = await this.dev.gatt.connect();
     this.srv = await g.getPrimaryService(UUID.svc);
     this.chars.ctrl = await this.srv.getCharacteristic(UUID.ctrl);
-    this.chars.ori  = await this.srv.getCharacteristic(UUID.ori);
-    this.chars.status = await this.srv.getCharacteristic(UUID.status);
-    this.chars.imu = await this.srv.getCharacteristic(UUID.imu);
-    await this.chars.ori.startNotifications();
-    this.chars.ori.addEventListener('characteristicvaluechanged', e=>onOri(e.target.value));
-    await this.chars.status.startNotifications();
-    this.chars.status.addEventListener('characteristicvaluechanged', e=>onStatus(e.target.value));
-    // IMU raw(0xf001, 12B/샘플 ≈50Hz) 자동 구독: 러닝 판정(|a|)·스텝 케이던스·수직축 각속도(yaw_rate) 에 필요. 리스너는 여기서 1회만 등록
-    try{ await this.chars.imu.startNotifications(); this.chars.imu.addEventListener('characteristicvaluechanged', e=>onImu(e.target.value));
-      this.imuSub=true; set('imuSub','on'); }
-    catch(e){ this.imuSub=false; set('imuSub','off'); log('IMU raw 구독 실패: '+e.message+' — yaw_rate 는 오일러 폴백, 러닝판정은 지표 기반','er'); }
+    if(!leg){
+      this.chars.ori  = await this.srv.getCharacteristic(UUID.ori);
+      this.chars.status = await this.srv.getCharacteristic(UUID.status);
+      this.chars.imu = await this.srv.getCharacteristic(UUID.imu);
+      await this.chars.ori.startNotifications();
+      this.chars.ori.addEventListener('characteristicvaluechanged', e=>onOri(e.target.value));
+    } else {
+      try{ this.chars.status = await this.srv.getCharacteristic(UUID.status); }catch(e){ this.chars.status=null; }
+    }
+    if(this.chars.status){
+      try{ await this.chars.status.startNotifications(); this.chars.status.addEventListener('characteristicvaluechanged', e=>onStatus(e.target.value, this));
+        onStatus(await this.chars.status.readValue(), this); }   // 현재 상태(E-Stop·펄스 지원 여부)를 즉시 반영
+      catch(e){ log(LINK_KO[this.role]+' 상태 구독 실패: '+e.message,'er'); }
+    }
+    if(!leg){
+      // IMU raw(0xf001, 12B/샘플 ≈50Hz) 자동 구독: 러닝 판정(|a|)·스텝 케이던스·수직축 각속도(yaw_rate) 에 필요. 리스너는 여기서 1회만 등록
+      try{ await this.chars.imu.startNotifications(); this.chars.imu.addEventListener('characteristicvaluechanged', e=>onImu(e.target.value));
+        this.imuSub=true; set('imuSub','on'); }
+      catch(e){ this.imuSub=false; set('imuSub','off'); log('IMU raw 구독 실패: '+e.message+' — yaw_rate 는 오일러 폴백, 러닝판정은 지표 기반','er'); }
+    }
     // 배터리
     try{ const bs=await g.getPrimaryService(UUID.battSvc); this.chars.batt=await bs.getCharacteristic(UUID.batt);
-      await this.chars.batt.startNotifications(); this.chars.batt.addEventListener('characteristicvaluechanged',e=>onBatt(e.target.value.getUint8(0)));
-      onBatt((await this.chars.batt.readValue()).getUint8(0)); }catch(e){}
-    // 장치정보
-    try{ const di=await g.getPrimaryService(UUID.devInfo);
-      for(const [id,u] of [['dvMfr',UUID.mfr],['dvModel',UUID.model],['dvFw',UUID.fw]]){
-        try{ dvSet(id, await readStr2(di,u)); }catch(e){}
-      }
-    }catch(e){}
-    dvSet('dvName', this.dev.name);
+      await this.chars.batt.startNotifications(); this.chars.batt.addEventListener('characteristicvaluechanged',e=>onBatt(e.target.value.getUint8(0), this));
+      onBatt((await this.chars.batt.readValue()).getUint8(0), this); }catch(e){}
+    if(!leg){   // 장치정보 (연결 카드 devCard)
+      try{ const di=await g.getPrimaryService(UUID.devInfo);
+        for(const [id,u] of [['dvMfr',UUID.mfr],['dvModel',UUID.model],['dvFw',UUID.fw]]){
+          try{ dvSet(id, await readStr2(di,u)); }catch(e){}
+        }
+      }catch(e){}
+      dvSet('dvName', this.dev.name);
+    }
+    if(this.dev.name) this.name=this.dev.name;
     this._q=Promise.resolve();   // 쓰기 큐 리셋(끊긴 뒤 잔여 제거)
-    this.connected=true; onConn();
-    log('연결됨','rx');
-  },
+    this.connected=true; this._tries=0; onConn(this);
+    log('연결됨: '+LINK_KO[this.role]+' '+(this.name||''),'rx');
+    if(leg) this.ctrl([0x13]);   // identify 버즈(300ms): 방금 연결된 모듈이 어느 것인지 촉각 확인
+  }
   async reconnect(){   // 의도치 않은 끊김 → 장치 재선택 없이 자동 재접속(백오프)
     if(this._reconnecting) return; this._reconnecting=true;
     for(let i=1;i<=12 && !this.connected && !this._userDisc; i++){
-      set('cName','재연결 중… ('+i+')'); set('connBtn','⏳ 재연결 중… (탭하면 중지)'); log('재연결 시도 '+i,'tx');
+      this._tries=i; linkRows(); log(LINK_KO[this.role]+' 재연결 시도 '+i,'tx');
       try{ await this._setup(); log('재연결 성공','rx'); break; }
       catch(e){ log('재연결 실패: '+e.message,'er'); await sleep(1500); }
     }
-    this._reconnecting=false;
-    if(!this.connected && !this._userDisc){ set('cName','미연결'); set('connBtn','🔗 MotionCue 연결'); log('재연결 포기 — 수동 연결하세요','er'); }
-  },
+    this._reconnecting=false; this._tries=0; linkRows();
+    if(!this.connected && !this._userDisc) log(LINK_KO[this.role]+' 재연결 포기 — 연결 탭에서 수동 연결하세요','er');
+  }
   ctrl(bytes){   // 순차 큐로 직렬화 — 명령 순서 보장(경쟁/GATT충돌 방지)
-    if(!this.connected){ log('미연결 — 명령 무시','er'); return Promise.resolve(); }
+    if(!this.connected){ log(LINK_KO[this.role]+' 미연결 — 명령 무시','er'); return Promise.resolve(); }
     this._q = this._q.then(async ()=>{
-      try{ await this.chars.ctrl.writeValue(new Uint8Array(bytes)); log('→ '+hex(bytes),'tx'); }
+      try{ await this.chars.ctrl.writeValue(new Uint8Array(bytes)); log((this.role==='T'?'':'['+this.role+'] ')+'→ '+hex(bytes),'tx'); }
       catch(e){ log('쓰기 실패 '+e.message,'er'); }
     });
     return this._q;
-  },
+  }
   disconnect(){ this._userDisc=true; this._reconnecting=false; if(this.dev&&this.dev.gatt.connected) this.dev.gatt.disconnect(); }
-};
+}
+const links={T:new Link('T'), L:new Link('L'), R:new Link('R')};
+const ble=links.T;   // 몸통 링크 별칭 — 센서·기준선·로거·개발 탭 코드는 그대로 몸통을 가리킴
 const sleep = ms => new Promise(r=>setTimeout(r,ms));
 async function readStr2(svc,u){ const c=await svc.getCharacteristic(u); const v=await c.readValue(); return dec(v); }
 function dec(dv){ let s=''; for(let i=0;i<dv.byteLength;i++){ const b=dv.getUint8(i); if(b) s+=String.fromCharCode(b);} return s; }
@@ -499,17 +556,16 @@ function onOri(dv){
   set('oRoll',ori.roll.toFixed(1)+'°'); set('oPitch',ori.pitch.toFixed(1)+'°'); set('oYaw',ori.yaw.toFixed(1)+'°');
   oriCount++;
 }
-function onStatus(dv){
+function onStatus(dv, link){ link=link||ble;
+  link.caps.pulse = dv.byteLength>=9;   // [7]펄스Hz [8]듀티 를 보내는 펌웨어(at02vib0+) = 0x14 지원
   const vibOn=dv.getUint8(1), rez=dv.byteLength>5?dv.getUint8(5):0;
-  set('statTxt', rez===2?'영점적용':(rez===1?'영점대기':'–'));
-  // E-Stop 감지: 장치 estop 바이트(7B) 또는, 앱이 진동 명령 중인데 실제 off(=물리버튼 정지) 추론
+  if(link===ble) set('statTxt', rez===2?'영점적용':(rez===1?'영점대기':'–'));
+  // E-Stop 감지: 장치 estop 바이트(7B+) 또는, 앱이 진동 명령 중인데 실제 off(=물리버튼 정지) 추론
   const es = (dv.byteLength>6) ? dv.getUint8(6)
-           : ((appMotorCmd>0 && vibOn===0 && (Date.now()-motorOnSince>500)) ? 1 : 0);
-  if(es===1 && !estopActive){ estopActive=true; appMotorCmd=0;
-    proto.running&&proto.stop(); man.running&&manStop();
-    document.getElementById('estopBanner').classList.add('show'); log('E-STOP (장치)','er'); }
+           : ((link.motorCmd>0 && vibOn===0 && (Date.now()-link.motorOnSince>500)) ? 1 : 0);
+  if(es===1 && !estopActive){ link.motorCmd=0; estop(LINK_KO[link.role]+' 모듈 버튼'); }   // 어느 모듈의 E-Stop 이든 전체 정지
 }
-function onBatt(p){ set('batTxt',p+'%'); set('dvBat',p+'%'); }
+function onBatt(p, link){ link=link||ble; link.bat=p; if(link===ble){ set('batTxt',p+'%'); set('dvBat',p+'%'); } linkRows(); }
 // IMU raw: int16 LE gx,gy,gz(0.07 dps/LSB, ±2000dps) · ax,ay,az(0.000488 g/LSB, ±16g) — 센서프레임 원시값(bias 미차감, 마운트 미회전)
 let imuCount=0, imuDisp=0;
 function onImu(dv){
@@ -565,7 +621,7 @@ const proto = {
   running:false, state:'idle', tEnd:0, mode:'run', mismatchShown:false,
   set:0, asym:0, side:'–',
   start(){ this.running=true; snapMarkStart=0; snapMarkStop=0; decider.reset(); this.mismatchShown=false; recStart(); LG.awake('proto', true); this.gotoStand(); },   // 시작 마커는 서기 후 첫 평가 진입 시. 세션 캡처 시작
-  stop(){ this.running=false; this.state='idle'; motor(0); clearTimeout(this._to); vibShow('–');
+  stop(){ this.running=false; this.state='idle'; stimAllOff(); clearTimeout(this._to); vibShow('–');
     if(snapMarkStart) snapMarkStop=performance.now();
     LG.awake('proto', false); const cap=recStop(); if(cap){ log('세션 캡처: '+capLabel(cap),'rx'); try{ snapShowCapture(cap.id); }catch(e){ console.error(e); } }
     setState('rState','rStateSub','대기','정지됨'); set('rTimer','–'); bar('rBar',0);
@@ -642,32 +698,35 @@ const proto = {
   },
   gotoWait(sub){
     this.state='wait'; const w=getVal('sWait');
-    setState('rState','rStateSub','대기', sub||'비대칭 미검출 · 다음 평가까지'); motor(0);
+    setState('rState','rStateSub','대기', sub||'비대칭 미검출 · 다음 평가까지'); stimAllOff();
     this.tick(w, ()=>this.gotoDetect());
   },
   gotoStim(){
     this.state='stim'; this.set=0;
-    // 진동 부위: 큰쪽/작은쪽 설정 반영
+    // 진동 부위: 큰쪽/작은쪽 설정 반영 → 해당 다리 모듈
     const sideSel=document.getElementById('sSide').value;
-    const vibSide = (sideSel==='large')? this.side : (this.side==='우'?'좌':'우');
-    vibShow(vibSide);
+    this.vibSide = (sideSel==='large')? this.side : (this.side==='우'?'좌':'우');
+    if(!stimTargets(this.vibSide, true).length){   // 대상 모듈 미연결: 자극 건너뛰고(5분 휴식으로 숨지 않게) 대기 → 다음 평가
+      vibShow('–'); this.gotoWait(LINK_KO[SIDE_ROLE[this.vibSide][0]]+' 모듈 미연결 · 자극 생략 · 다음 평가까지'); return; }
+    vibShow(this.vibSide);
     this.stimBlock();
   },
+  abortStim(why){ if(this.state!=='stim') return; log('자극 중단: '+why,'er'); stimAllOff(); vibShow('–'); this.gotoWait(why+' · 다음 평가까지'); },
   stimBlock(){
     const sets=getVal('sSets');
     if(this.set>=sets){ this.gotoPause(); return; }
     this.set++;
-    const on=getVal('sOn'), off=getVal('sOff'), intn=getVal('sInt');
-    setState('rState','rStateSub','중재 (진동)', `세트 ${this.set}/${sets} · 진동 ${on}s`);
-    motor(intn);
+    const on=getVal('sOn'), off=getVal('sOff'), p=stimParams();
+    setState('rState','rStateSub','중재 (진동)', `세트 ${this.set}/${sets} · 진동 ${on}s · ${this.vibSide} ${p.pct}%${p.duty<100?' · '+p.freq+'Hz/'+p.duty+'%':''}`);
+    stim(this.vibSide, true, p);
     this.tick(on, ()=>{
-      motor(0);
+      stim(this.vibSide, false);
       setState('rState','rStateSub','중재 (휴지)', `세트 ${this.set}/${sets} · 휴지 ${off}s`);
       this.tick(off, ()=>this.stimBlock());
     });
   },
   gotoPause(){
-    this.state='pause'; motor(0); vibShow('–');
+    this.state='pause'; stimAllOff(); vibShow('–');
     const p=getVal('sPause');
     setState('rState','rStateSub','평가 중지', '중재 후 휴식');
     this.tick(p, ()=>this.gotoDetect());
@@ -732,35 +791,50 @@ baselineRefresh();
 
 // ===================== 수동 모드 =====================
 const man={ running:false, _to:null };
-function manStart(){ if(!ble.connected){ alert('먼저 연결하세요'); return; }
+function manStart(){ if(!Object.values(links).some(l=>l.connected)){ alert('먼저 모듈을 연결하세요'); return; }
   clearEstop();   // 재시작 시 E-Stop 자동 해제
   man.running=true; document.getElementById('manStart').disabled=true; document.getElementById('manStop').disabled=false;
   man.end=Date.now()+getVal('mMin')*60000; manBlock(); }
-function manStop(){ man.running=false; motor(0); clearTimeout(man._to);
+function manStop(){ man.running=false; stimAllOff(); clearTimeout(man._to);
   document.getElementById('manStart').disabled=false; document.getElementById('manStop').disabled=true;
   setState('mState','mStateSub','대기','정지됨'); set('mTimer','–'); }
 function manBlock(){
   if(!man.running) return;
   if(Date.now()>=man.end){ manStop(); setState('mState','mStateSub','완료','설정 시간 종료'); return; }
-  const on=getVal('mOn'), off=getVal('mOff'), intn=getVal('mInt');
-  setState('mState','mStateSub','진동', on+'s'); motor(intn);
-  manCount(on, ()=>{ motor(0); setState('mState','mStateSub','휴지', off+'s'); manCount(off, manBlock); });
+  const on=getVal('mOn'), off=getVal('mOff'), p=manParams(), side=manSide();
+  setState('mState','mStateSub','진동', on+'s · '+side+' '+p.pct+'%'+(p.duty<100?' · '+p.freq+'Hz/'+p.duty+'%':''));
+  if(!stim(side, true, p)) setState('mState','mStateSub','진동 (대상 없음)', side+' 모듈 미연결');
+  manCount(on, ()=>{ stim(side, false); setState('mState','mStateSub','휴지', off+'s'); manCount(off, manBlock); });
 }
 function manCount(sec, done){ const end=Date.now()+sec*1000;
   const step=()=>{ if(!man.running) return; const left=end-Date.now();
     if(left<=0){ done(); return; } set('mTimer',fmt(left)); man._to=setTimeout(step,200); }; step(); }
 
 // ===================== 공통/UI =====================
-let appMotorCmd=0, motorOnSince=0, estopActive=false;
-function motor(pct){ const d=Math.max(0,Math.min(100,Math.round(pct))); if(window.LG) LG.event('motor',{pct:d});
-  if(estopActive && d>0) return;              // E-Stop 중엔 진동 명령 억제
-  if(d>0 && appMotorCmd===0) motorOnSince=Date.now();
-  appMotorCmd=d; ble.ctrl([0x10, d]); }
-function estop(){ estopActive=true; appMotorCmd=0; ble.ctrl([0x11,1]);
+let estopActive=false;
+const LINK_KO={T:'몸통', L:'왼다리', R:'오른다리'};
+const SIDE_ROLE={'좌':['L'], '우':['R'], '양쪽':['L','R']};
+function motor(pct){ if(window.LG) LG.event('motor',{link:'T', pct:Math.round(pct), freq:0, duty:100}); return ble.vib(pct,0,100); }   // 개발 탭·레거시(몸통 모듈 연속)
+// 부위별 자극 대상: '좌'|'우'|'양쪽' → 다리 링크. 대상 링크가 없거나(미등록) '몸통 대체' 옵션이면 몸통, 미연결이면 건너뜀(잘못된 부위 자극 방지)
+function stimTargets(side, warn){ const roles=SIDE_ROLE[side]||[], torso=!!(document.getElementById('sStimTorso')||{}).checked, out=[];
+  for(const r of roles){ const lk=links[r];
+    if(lk && lk.connected) out.push(r);
+    else if(torso){ if(!out.includes('T') && links.T.connected) out.push('T'); if(warn) log(LINK_KO[r]+' 모듈 미연결 — 몸통 모듈로 대체 자극','er'); }
+    else if(warn) log(LINK_KO[r]+' 모듈 미연결 — 자극 생략','er'); }
+  return out; }
+function stimParams(){ return {pct:getVal('sInt'), freq:getVal('sFreq'), duty:getVal('sDuty')}; }
+function manParams(){ return {pct:getVal('mInt'), freq:getVal('mFreq'), duty:getVal('mDuty')}; }
+function manSide(){ return (document.getElementById('mSide')||{}).value||'양쪽'; }
+// 자극 on/off: p={pct,freq,duty}. 반환 = 명령을 보낸 링크 수(0 이면 대상 없음)
+function stim(side, on, p){ const t=stimTargets(side, !!on); const q=on? p : {pct:0,freq:0,duty:0};
+  for(const r of t){ if(window.LG) LG.event('motor',{link:r, side, pct:q.pct, freq:q.freq, duty:q.duty}); links[r].vib(q.pct,q.freq,q.duty); }
+  return t.length; }
+function stimAllOff(){ for(const r of Object.keys(links)){ const lk=links[r]; if(lk.connected && lk.motorCmd>0){ if(window.LG) LG.event('motor',{link:r, pct:0, freq:0, duty:0}); lk.vib(0,0,0); } } }
+function estop(from){ estopActive=true; for(const r of Object.keys(links)){ links[r].motorCmd=0; if(links[r].connected) links[r].ctrl([0x11,1]); }
   proto.running&&proto.stop(); man.running&&manStop();
-  document.getElementById('estopBanner').classList.add('show'); log('🛑 E-STOP','er'); }
+  document.getElementById('estopBanner').classList.add('show'); log('🛑 E-STOP'+(from?' ('+from+')':''),'er'); }
 function hideEstop(){ document.getElementById('estopBanner').classList.remove('show'); }   // 배너만 닫기(알림 성격)
-function clearEstop(){ ble.ctrl([0x11,0]); estopActive=false; appMotorCmd=0; hideEstop(); } // 재시작 시 항상 해제 먼저(큐로 순서보장)
+function clearEstop(){ for(const r of Object.keys(links)){ links[r].motorCmd=0; if(links[r].connected) links[r].ctrl([0x11,0]); } estopActive=false; hideEstop(); } // 재시작 시 항상 해제 먼저(큐로 순서보장)
 function set(id,v){ const e=document.getElementById(id); if(e) e.textContent=v; }
 function getVal(id){ return +document.getElementById(id).value||0; }
 function setState(sid,subid,s,sub){ const e=document.getElementById(sid); if(e){ e.firstChild.textContent=s; document.getElementById(subid).textContent=sub; } if(window.LG) LG.event('state',{sid,s,sub}); }
@@ -769,24 +843,44 @@ function tab(p){ document.querySelectorAll('.panel').forEach(x=>x.classList.remo
   document.getElementById('p-'+p).classList.add('active');
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('sel', b.dataset.p===p)); }
 function toggleSw(id,cb){ const e=document.getElementById(id); e.classList.toggle('on'); cb(e.classList.contains('on')?1:0); }
-async function toggleConn(){
-  if(ble.connected){ ble.disconnect(); return; }
-  if(ble._reconnecting){ ble._userDisc=true; ble._reconnecting=false;   // 재연결 중이면 중지
-    set('cName','미연결'); set('connBtn','🔗 MotionCue 연결'); log('재연결 중지','er'); return; }
-  try{ await ble.connect(); }catch(e){ log('연결 실패: '+e.message,'er'); }
-}
-function onConn(){ document.getElementById('cdot').classList.add('on'); set('cName', ble.dev.name); LG.event('ble',{action:'connect', name:ble.dev.name}); LG.awake('ble', true);
-  set('connBtn','🔌 연결 해제'); document.getElementById('devCard').style.display='block';
+// ---- 모듈 등록/연결 UI (연결 카드 3행) ----
+const DEV_KEY='mc.devices.v1'; let devStore={};   // {T:{id,name}, L:{…}, R:{…}} — BluetoothDevice.id 는 이 origin 에서 안정된 키
+try{ devStore=JSON.parse((_ls&&_ls.getItem(DEV_KEY))||'{}')||{}; }catch(e){ devStore={}; }
+function devStoreSave(){ try{ if(_ls) _ls.setItem(DEV_KEY, JSON.stringify(devStore)); }catch(e){} }
+function linkRows(){ const host=document.getElementById('linkRows'); if(!host) return;
+  host.innerHTML=['T','L','R'].map(r=>{ const lk=links[r], sv=devStore[r]; const nm=(lk.dev&&lk.dev.name)||lk.name||(sv&&sv.name)||'미등록';
+    const st= lk.connected? '연결됨'+(lk.bat!=null?' · 🔋'+lk.bat+'%':'')+(r!=='T'?(lk.caps.pulse?' · 펄스 지원':' · 구형 펌웨어(연속만)'):'')
+            : lk._reconnecting? '재연결 중… ('+lk._tries+')' : sv? '저장됨 · 미연결' : (r==='T'?'각도 센서 모듈':'진동자극 모듈');
+    const btn= lk.connected? '해제' : lk._reconnecting? '중지' : sv? '연결' : '선택·연결';
+    return '<div class="lrow"><span class="dot'+(lk.connected?' on':'')+'"></span><span class="nm"><b>'+LINK_KO[r]+'</b> '+nm+'<div class="st">'+st+'</div></span>'
+      +'<button class="btn-g" onclick="linkBtn(\''+r+'\')">'+btn+'</button>'+(sv?'<button class="btn-g" title="저장 해제" onclick="linkForget(\''+r+'\')">✕</button>':'')+'</div>'; }).join('');
+  set('cName', ['T','L','R'].map(r=>LINK_KO[r].slice(0,2)+(links[r].connected?'✓':'–')).join(' '));
+  document.getElementById('cdot').classList.toggle('on', links.T.connected); }
+async function linkBtn(r){ const lk=links[r];
+  if(lk.connected){ lk.disconnect(); return; }
+  if(lk._reconnecting){ lk._userDisc=true; lk._reconnecting=false; log(LINK_KO[r]+' 재연결 중지','er'); linkRows(); return; }
+  try{ await (devStore[r]? lk.connectSaved() : lk.pair()); }catch(e){ if(e.message!=='취소') log(LINK_KO[r]+' 연결 실패: '+e.message,'er'); }
+  linkRows(); }
+function linkForget(r){ const lk=links[r]; if(!confirm(LINK_KO[r]+' 모듈 저장을 해제할까요?')) return; if(lk.connected) lk.disconnect(); lk.dev=null; lk.name=null; delete devStore[r]; devStoreSave(); linkRows(); }
+async function connectAll(){ const roles=['T','L','R'].filter(r=>devStore[r] && !links[r].connected);
+  if(!roles.length){ log('저장된 미연결 모듈 없음 — 부위 버튼으로 등록하세요','er'); return; }
+  for(const r of roles){ try{ await links[r].connectSaved(); }catch(e){ log(LINK_KO[r]+' 연결 실패: '+e.message,'er'); } }
+  linkRows(); }
+for(const r of Object.keys(devStore)) if(links[r] && devStore[r]) links[r].name=devStore[r].name||null;
+linkRows();
+function onConn(link){ link=link||ble; linkRows(); LG.event('ble',{action:'connect', role:link.role, name:link.dev.name}); LG.awake('ble:'+link.role, true);
+  if(link.role!=='T') return;
+  document.getElementById('devCard').style.display='block';
   set('dvAlgo', ALGO[+document.getElementById('sAlgo').value]||'mahony');
   // UI 스위치 상태를 기기에 동기(펌웨어 기본 ZUPT OFF 와 UI 표시가 어긋나지 않게)
   ble.ctrl([0x0B, document.getElementById('swZupt').classList.contains('on')?1:0]);
   ble.ctrl([0x0D, document.getElementById('swYaw').classList.contains('on')?1:0]);
   baselineRefresh(); }
-function onDisc(){ ble.connected=false; document.getElementById('cdot').classList.remove('on'); LG.event('ble',{action:'disconnect', userDisc:!!ble._userDisc}); LG.awake('ble', false);
-  proto.running&&proto.stop(); man.running&&manStop(); log('연결 끊김','er');
-  if(!ble._userDisc && ble.dev && !ble._reconnecting){   // 의도치 않은 끊김 → 자동 재연결
-    log('자동 재연결 시작…','tx'); ble.reconnect();
-  } else { set('cName','미연결'); set('connBtn','🔗 MotionCue 연결'); }
+function onDisc(link){ link=link||ble; link.connected=false; link.bat=null; link.motorCmd=0; linkRows();
+  LG.event('ble',{action:'disconnect', role:link.role, userDisc:!!link._userDisc}); LG.awake('ble:'+link.role, false); log(LINK_KO[link.role]+' 연결 끊김','er');
+  if(link.role==='T'){ proto.running&&proto.stop(); man.running&&manStop(); }   // 몸통(센서) 없이는 측정 불가 → 세션 정지(다리 모터도 off)
+  else if(proto.running && proto.state==='stim' && (SIDE_ROLE[proto.vibSide]||[]).includes(link.role)) proto.abortStim(LINK_KO[link.role]+' 모듈 연결 끊김');   // 자극 대상만 중단, 세션 계속
+  if(!link._userDisc && link.dev && !link._reconnecting){ log(LINK_KO[link.role]+' 자동 재연결 시작…','tx'); link.reconnect(); }
 }
 async function toggleImu(){   // 알림 on/off 만 (리스너는 _setup 에서 1회 등록)
   if(!ble.connected) return;
@@ -1159,7 +1253,7 @@ window.LG={ on:false, db:null, pending:[], ori:{t:[],v:[]}, raw:{t:[],v:[]}, nOr
   hz(o,i){ this.hzAcc.push([o,i]); if(this.hzAcc.length>=5){ const a=this.hzAcc; this.hzAcc=[]; if(a.some(x=>x[0]||x[1])) this.event('hz',{o:a.map(x=>x[0]), i:a.map(x=>x[1])}); } },
   toggle(){ this.on? this.stop() : this.start(); },
   async start(){ try{ await this.open(); }catch(e){ alert('저장소 열기 실패: '+e.message); return; } this.on=true; this.t0=performance.now(); this.lastFlush=this.t0; this.nOri=0; this.nRaw=0; this.awake('logger', true);
-    this.event('logger',{action:'start', ua:navigator.userAgent, build:APP_BUILD, engine:MC.ENGINE_VER, url:location.href, perfOrigin:performance.timeOrigin, connected:!!ble.connected, device:devId()}); log('로거 기록 시작','tx'); this.ui(); },
+    this.event('logger',{action:'start', ua:navigator.userAgent, build:APP_BUILD, engine:MC.ENGINE_VER, url:location.href, perfOrigin:performance.timeOrigin, connected:!!ble.connected, device:devId(), legs:{L:links.L.name||null, R:links.R.name||null}}); log('로거 기록 시작','tx'); this.ui(); },
   async stop(){ this.on=false; await this.flush(true); this.event('logger',{action:'stop', nOri:this.nOri, nRaw:this.nRaw}); this.awake('logger', false); log('로거 기록 정지 (자세 '+this.nOri+' · raw '+this.nRaw+' 샘플)','tx'); this.ui(); },
   pushOri(t, o){ const q=o.q||[1,0,0,0]; this.ori.t.push(t); this.ori.v.push(o.roll||0, o.pitch||0, o.yaw||0, o.lean||0, q[0],q[1],q[2],q[3]); this.nOri++; if(t-this.lastFlush>=5000) this.flush(false); },
   pushRaw(t, g, a){ this.raw.t.push(t); this.raw.v.push(g[0],g[1],g[2],a[0],a[1],a[2]); this.nRaw++; },
@@ -1194,7 +1288,7 @@ window.LG={ on:false, db:null, pending:[], ori:{t:[],v:[]}, raw:{t:[],v:[]}, nOr
     for(const sg of segs){ sg.ori.sort((a,b)=>a[0]-b[0]); sg.raw.sort((a,b)=>a[0]-b[0]); }
     return segs; },
   async exportLog(share){ try{ log('로그 내보내기 준비…','tx'); if(this.on) await this.flush(true); const segs=await this.build(); const events=await this.all('events');
-      const o={schema:'mclog/1', exportedAt:new Date().toISOString(), app:{build:APP_BUILD, engine:MC.ENGINE_VER, ua:navigator.userAgent, url:location.href, perfOrigin:performance.timeOrigin}, device:{name:devId()},
+      const o={schema:'mclog/1', exportedAt:new Date().toISOString(), app:{build:APP_BUILD, engine:MC.ENGINE_VER, ua:navigator.userAgent, url:location.href, perfOrigin:performance.timeOrigin}, device:{name:devId(), L:links.L.name||null, R:links.R.name||null},
         settings:this.settingsSnapshot(), gateOverride:tuneOver, leanAxis:leanAxis.slice(), signFlip:!!cfg.signFlip, bias:raw.bias.slice(), metric:cfg.metric,
         oriCols:['t','roll','pitch','yaw','lean','qw','qx','qy','qz'], rawCols:['t','gx','gy','gz','ax','ay','az'],
         events:events.map(e=>({t:+(e.t+this._off(e, e.t)).toFixed(1), wall:e.wall, kind:e.kind, data:e.data})).sort((a,b)=>a.wall-b.wall), segments:segs,
@@ -1216,10 +1310,21 @@ LG.open().then(()=>{ LG.event('app',{action:'load', build:APP_BUILD, engine:MC.E
 window.addEventListener('error', e=>{ LG.event('error',{msg:String(e.message), src:String(e.filename||'').split('/').pop(), line:e.lineno}); });
 window.addEventListener('unhandledrejection', e=>{ LG.event('error',{msg:String((e.reason&&e.reason.message)||e.reason)}); });
 document.addEventListener('visibilitychange', ()=>{ LG.event('visibility',{state:document.visibilityState}); if(document.visibilityState==='visible') LG.awake('_', false); });
-document.querySelectorAll('#p-set input, #p-set select').forEach(el=>el.addEventListener('change', ()=>LG.event('setting',{id:el.id, value:(el.type==='checkbox'? el.checked : el.value)})));
+document.querySelectorAll('#p-set input, #p-set select').forEach(el=>el.addEventListener('change', ()=>{ LG.event('setting',{id:el.id, value:(el.type==='checkbox'? el.checked : el.value)}); settingsSave(); }));
+// 설정 저장/복원 (localStorage mc.settings.v1): 폰에서 새로고침해도 자극 파라미터·프로토콜 설정 유지. 튜닝 카드(tune*)는 자체 저장(mc.gate.override.v1)
+const SETTINGS_KEY='mc.settings.v1';
+function settingsSave(){ try{ const o=LG.settingsSnapshot(); for(const k of Object.keys(o)) if(k.startsWith('tune')) delete o[k]; if(_ls) _ls.setItem(SETTINGS_KEY, JSON.stringify(o)); }catch(e){} }
+function settingsRestore(){ let o=null; try{ o=JSON.parse((_ls&&_ls.getItem(SETTINGS_KEY))||'null'); }catch(e){} if(!o) return false;
+  for(const [id,v] of Object.entries(o)){ const el=document.getElementById(id); if(!el || id.startsWith('tune')) continue; if(el.type==='checkbox') el.checked=!!v; else el.value=v; }
+  // 이벤트 없이 값만 넣었으므로 UI 부수효과만 명시 적용. 기기로는 보내지 않음(sMount 는 NVM3·자세 리셋, sAlgo 도 연결 시 기기값 유지)
+  set('hWin', getVal('sWin')); set('snapWin', getVal('sWin')); cfg.metric=document.getElementById('sMetric').value; set('metricName', cfg.metric);
+  cfg.signFlip=!!document.getElementById('sSignFlip').checked; leanAxis=[[1,0,0],[0,1,0],[0,0,1]][+document.getElementById('sLeanAxis').value]||leanAxis;
+  return true; }
+if(settingsRestore()){ baselineRefresh(); log('설정 복원(브라우저 저장)','tx'); }
 setInterval(()=>{ if(LG.on) LG.ui(); }, 2000);
 // 시뮬(#sim): 합성 BLE 알림(50Hz) → 러닝 시작(서기 3s) → 평가 창 2개 → 정지 → 자동 캡처/스냅샷 전환을 headless 로 점검
 if(location.hash==='#sim'||location.hash==='#logsim'){ (function(){ const LS=(location.hash==='#logsim'); ble.connected=true; ble.chars.ctrl={writeValue:async()=>{}}; let i=0;
+    const simW=[]; for(const r of ['L','R']){ links[r].connected=true; links[r].caps.pulse=true; links[r].chars.ctrl={writeValue:async b=>{ simW.push([r, ...Array.from(b)]); }}; } linkRows();   // 다리 링크 스텁: 0x14 라우팅 기록
     const mk=vals=>{ const dv=new DataView(new ArrayBuffer(vals.length*2)); vals.forEach((v,k)=>dv.setInt16(k*2, Math.round(v), true)); return dv; };
     const iv=setInterval(()=>{ const tt=i/50; i++; const run=tt>5, lean=run? 5*Math.sin(2*Math.PI*1.25*tt) : 0, h=lean/2*Math.PI/180;
       onOri(mk([lean*100, 0, 0, Math.cos(h)*16384, Math.sin(h)*16384, 0, 0]));
@@ -1228,9 +1333,11 @@ if(location.hash==='#sim'||location.hash==='#logsim'){ (function(){ const LS=(lo
     const out={};
     if(LS) setTimeout(()=>{ LG.start(); LG.tagStart('러닝'); }, 500);
     setTimeout(()=>{ runStart(); out.afterStart=document.getElementById('snapSrc').value; }, 1000);
+    setTimeout(async()=>{ const n=stim('좌',true,{pct:50,freq:30,duty:40}); await links.L._q; stim('좌',false); await links.L._q;   // 부위 라우팅 검사: 왼다리에만 0x14 on/off
+      out.stim=(n===1 && simW.some(w=>w[0]==='L'&&w[1]===0x14&&w[2]===50&&w[3]===30&&w[4]===40) && simW.some(w=>w[0]==='L'&&w[1]===0x14&&w[2]===0) && !simW.some(w=>w[0]==='R'&&w[1]===0x14))? 'ok' : 'FAIL '+JSON.stringify(simW); }, 2000);
     setTimeout(()=>{ renderSnapshot(); out.mid=document.getElementById('snapSrc').value+' | '+document.getElementById('snapTxt').textContent.slice(0,60); }, 45000);
     setTimeout(()=>{ runStop(); clearInterval(iv); const ss=document.getElementById('snapSrc'); out.end=ss.value+' caps='+captures.length+' win='+(captures[0]?captures[0].windows.map(w=>w.state).join(','):'-')+' | '+document.getElementById('snapTxt').textContent.slice(0,80);
-      document.title='SIM start='+out.afterStart+' || mid='+out.mid+' || end='+out.end;
+      document.title='SIM start='+out.afterStart+' || mid='+out.mid+' || end='+out.end+' || stim='+out.stim;
       if(LS){ (async()=>{ LG.tagEnd(); LG.noteFromInput(); await LG.stop(); const segs=await LG.build(), ev=await LG.all('events'); const kinds={}; for(const e of ev) kinds[e.kind]=(kinds[e.kind]||0)+1;
         const o={schema:'mclog/1', app:{build:APP_BUILD, engine:MC.ENGINE_VER, perfOrigin:performance.timeOrigin}, device:{name:'sim'}, settings:LG.settingsSnapshot(), bias:raw.bias, leanAxis, events:ev, segments:segs, captures:[]}; const caps=importLog(o,'sim');
         document.body.insertAdjacentHTML('beforeend','<pre id="mclog" hidden>'+JSON.stringify(o).replace(/</g,'&lt;')+'</pre>');
