@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MotionCue-R API 설명서</title>
+<style>
+:root{--bg:#0e131a;--bg2:#131a24;--card:#171f2a;--line:#263241;--tx:#e6edf5;--tx2:#9fb0c3;--pri:#4c8dff;--code:#1c2733;--mark:#ffd166;--mark-tx:#1a1400}
+@media (prefers-color-scheme: light){:root{--bg:#f7f9fc;--bg2:#eef2f7;--card:#fff;--line:#d9e1ea;--tx:#1a2330;--tx2:#5a6b80;--pri:#2b6fe6;--code:#eef2f7;--mark:#ffe08a;--mark-tx:#1a1400}}
+*{box-sizing:border-box} html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.6 -apple-system,"Segoe UI",Roboto,"Noto Sans KR","Malgun Gothic",sans-serif}
+a{color:var(--pri);text-decoration:none} a:hover{text-decoration:underline}
+.top{position:fixed;top:0;left:0;right:0;height:52px;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 14px;z-index:30}
+.top .ttl{font-weight:800;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .sp{flex:1} .top input{width:min(360px,50vw);background:var(--card);border:1px solid var(--line);color:var(--tx);border-radius:8px;padding:7px 10px;font-size:14px}
+.top .cnt{font-size:12px;color:var(--tx2);white-space:nowrap}
+.top button{background:var(--card);border:1px solid var(--line);color:var(--tx);border-radius:8px;padding:6px 10px;cursor:pointer}
+nav{position:fixed;top:52px;left:0;bottom:0;width:290px;overflow:auto;background:var(--bg2);border-right:1px solid var(--line);padding:10px 8px 40px;z-index:20}
+nav a{display:block;color:var(--tx2);padding:4px 8px;border-radius:6px;font-size:13px;line-height:1.35}
+nav a.t3{padding-left:22px;font-size:12px} nav a:hover,nav a.cur{background:var(--card);color:var(--tx);text-decoration:none} nav a.hide{display:none}
+main{margin-left:290px;padding:70px 28px 80px;max-width:1080px}
+h1{font-size:26px;margin:0 0 14px} h2{font-size:21px;margin:38px 0 10px;padding-top:12px;border-top:1px solid var(--line)} h3{font-size:17px;margin:26px 0 8px} h4{font-size:15px;margin:18px 0 6px;color:var(--tx2)}
+h1,h2,h3,h4{scroll-margin-top:64px} .anc{opacity:0;margin-left:8px;font-weight:400;font-size:.8em} h1:hover .anc,h2:hover .anc,h3:hover .anc,h4:hover .anc{opacity:.7}
+p{margin:8px 0} code{background:var(--code);border:1px solid var(--line);border-radius:5px;padding:1px 5px;font:13px/1.4 ui-monospace,Consolas,"D2Coding",monospace}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow:auto} pre code{background:none;border:0;padding:0;font-size:12.5px}
+.tbl{overflow-x:auto;margin:10px 0} table{border-collapse:collapse;width:100%;font-size:13.5px} th,td{border:1px solid var(--line);padding:6px 9px;vertical-align:top;text-align:left} th{background:var(--bg2);white-space:nowrap}
+ul,ol{padding-left:22px;margin:6px 0} li{margin:3px 0} hr{border:0;border-top:1px solid var(--line);margin:22px 0}
+p,li,td{overflow-wrap:anywhere} td code{white-space:normal;overflow-wrap:anywhere}
+mark{background:var(--mark);color:var(--mark-tx);border-radius:3px;padding:0 1px}
+.totop{position:fixed;right:16px;bottom:16px;background:var(--card);border:1px solid var(--line);color:var(--tx);border-radius:20px;padding:8px 12px;font-size:12px;z-index:25}
+.meta{font-size:12px;color:var(--tx2);margin-bottom:18px}
+@media(max-width:900px){nav{transform:translateX(-100%);transition:transform .2s;width:min(300px,85vw)} nav.open{transform:none} main{margin-left:0;padding:66px 14px 80px} .top .ttl{font-size:13px}}
+</style></head><body>
+<div class="top"><button id="menu" onclick="document.getElementById('nav').classList.toggle('open')">☰</button><div class="ttl">MotionCue-R API 설명서</div><div class="sp"></div>
+<input id="q" placeholder="검색 (목차·본문)" autocomplete="off"><span class="cnt" id="cnt"></span></div>
+<nav id="nav"><a class="t2" href="#1.-시스템-구성" data-t="1. 시스템 구성">1. 시스템 구성</a><a class="t3" href="#1.1-모듈과-역할" data-t="1.1 모듈과 역할">1.1 모듈과 역할</a><a class="t3" href="#1.2-사용-흐름" data-t="1.2 사용 흐름">1.2 사용 흐름</a><a class="t2" href="#2.-ble-프로토콜" data-t="2. ble 프로토콜">2. BLE 프로토콜</a><a class="t3" href="#2.1-광고연결" data-t="2.1 광고·연결">2.1 광고·연결</a><a class="t3" href="#2.2-gatt-서비스특성" data-t="2.2 gatt 서비스·특성">2.2 GATT 서비스·특성</a><a class="t3" href="#2.3-orientation-프레임-e8a1f004-14-b" data-t="2.3 orientation 프레임 (e8a1f004, 14 b)">2.3 Orientation 프레임 (e8a1f004, 14 B)</a><a class="t3" href="#2.4-imu-data-프레임-e8a1f001-12-b" data-t="2.4 imu data 프레임 (e8a1f001, 12 b)">2.4 IMU Data 프레임 (e8a1f001, 12 B)</a><a class="t3" href="#2.5-control-명령-e8a1f002-쓰기-4-b" data-t="2.5 control 명령 (e8a1f002, 쓰기 ≤ 4 b)">2.5 Control 명령 (e8a1f002, 쓰기 ≤ 4 B)</a><a class="t3" href="#2.6-status-e8a1f003-9-b" data-t="2.6 status (e8a1f003, 9 b)">2.6 Status (e8a1f003, 9 B)</a><a class="t3" href="#2.7-펌웨어-동작-규칙앱이-전제하는-것" data-t="2.7 펌웨어 동작 규칙(앱이 전제하는 것)">2.7 펌웨어 동작 규칙(앱이 전제하는 것)</a><a class="t2" href="#3.-앱의-연결-관리-link" data-t="3. 앱의 연결 관리 (link)">3. 앱의 연결 관리 (Link)</a><a class="t3" href="#3.1-연결-절차역할별" data-t="3.1 연결 절차(역할별)">3.1 연결 절차(역할별)</a><a class="t3" href="#3.2-등록저장재연결" data-t="3.2 등록·저장·재연결">3.2 등록·저장·재연결</a><a class="t3" href="#3.3-연결-직후-명령-시퀀스-예몸통" data-t="3.3 연결 직후 명령 시퀀스 예(몸통)">3.3 연결 직후 명령 시퀀스 예(몸통)</a><a class="t2" href="#4.-신호-입력-규약앱-내부" data-t="4. 신호 입력 규약(앱 내부)">4. 신호 입력 규약(앱 내부)</a><a class="t2" href="#5.-검출-엔진-asymengine.js-a7" data-t="5. 검출 엔진 (asym_engine.js, a7)">5. 검출 엔진 (asym_engine.js, A7)</a><a class="t3" href="#5.1-gate-상수-mc.gate" data-t="5.1 gate 상수 (mc.gate)">5.1 GATE 상수 (MC.GATE)</a><a class="t3" href="#5.2-분석-파이프라인-asymengine.analyzerangemetric-t0-t1-tnow" data-t="5.2 분석 파이프라인 (asymengine.analyzerange(metric, t0, t1, tnow))">5.2 분석 파이프라인 (AsymEngine.analyzeRange(metric, t0, t1, tNow))</a><a class="t3" href="#5.3-상태사유-표" data-t="5.3 상태·사유 표">5.3 상태·사유 표</a><a class="t3" href="#5.4-결과-객체-r" data-t="5.4 결과 객체 r">5.4 결과 객체 R</a><a class="t3" href="#5.5-러닝-판정과-스텝-케이던스-rawengine" data-t="5.5 러닝 판정과 스텝 케이던스 (rawengine)">5.5 러닝 판정과 스텝 케이던스 (RawEngine)</a><a class="t3" href="#5.6-로브짝si-상세" data-t="5.6 로브·짝·si 상세">5.6 로브·짝·SI 상세</a><a class="t3" href="#5.7-스냅샷-asymengine.snapshotmetric-showt0-showt1-at0-at1" data-t="5.7 스냅샷 (asymengine.snapshot(metric, {showt0, showt1, at0, at1}))">5.7 스냅샷 (AsymEngine.snapshot(metric, {showT0, showT1, aT0, aT1}))</a><a class="t2" href="#6.-러닝-자동-중재-상태기계-proto" data-t="6. 러닝 자동 중재 상태기계 (proto)">6. 러닝 자동 중재 상태기계 (proto)</a><a class="t3" href="#6.1-상태-전이" data-t="6.1 상태 전이">6.1 상태 전이</a><a class="t3" href="#6.2-evalasym-상세" data-t="6.2 evalasym 상세">6.2 evalAsym 상세</a><a class="t2" href="#7.-기준선baseline과-판정" data-t="7. 기준선(baseline)과 판정">7. 기준선(baseline)과 판정</a><a class="t3" href="#7.1-기준-측정" data-t="7.1 기준 측정">7.1 기준 측정</a><a class="t3" href="#7.2-기준선-json-schema-1" data-t="7.2 기준선 json (schema 1)">7.2 기준선 JSON (schema 1)</a><a class="t3" href="#7.3-편차와-판정기" data-t="7.3 편차와 판정기">7.3 편차와 판정기</a><a class="t2" href="#8.-진동-자극-제어" data-t="8. 진동 자극 제어">8. 진동 자극 제어</a><a class="t3" href="#8.1-파라미터" data-t="8.1 파라미터">8.1 파라미터</a><a class="t3" href="#8.2-라우팅-규칙" data-t="8.2 라우팅 규칙">8.2 라우팅 규칙</a><a class="t3" href="#8.3-link.vibpct-freq-duty" data-t="8.3 link.vib(pct, freq, duty)">8.3 Link.vib(pct, freq, duty)</a><a class="t3" href="#8.4-e-stop" data-t="8.4 e-stop">8.4 E-Stop</a><a class="t3" href="#8.5-수동-모드" data-t="8.5 수동 모드">8.5 수동 모드</a><a class="t3" href="#8.6-안전-규칙-요약" data-t="8.6 안전 규칙 요약">8.6 안전 규칙 요약</a><a class="t2" href="#9.-설정-항목-전체" data-t="9. 설정 항목 전체">9. 설정 항목 전체</a><a class="t2" href="#10.-저장소와-데이터-형식" data-t="10. 저장소와 데이터 형식">10. 저장소와 데이터 형식</a><a class="t3" href="#10.1-localstorage-키" data-t="10.1 localstorage 키">10.1 localStorage 키</a><a class="t3" href="#10.2-로거-indexeddb-mclogger-v1" data-t="10.2 로거 indexeddb mc_logger (v1)">10.2 로거 IndexedDB mc_logger (v1)</a><a class="t3" href="#10.3-로그-내보내기-mclog1-gzip-json" data-t="10.3 로그 내보내기 mclog/1 (gzip json)">10.3 로그 내보내기 mclog/1 (gzip JSON)</a><a class="t3" href="#10.4-캡처-json-schema-1" data-t="10.4 캡처 json (schema 1)">10.4 캡처 JSON (schema 1)</a><a class="t3" href="#10.5-비대칭-로그-csv-열-순서" data-t="10.5 비대칭 로그 csv (열 순서)">10.5 비대칭 로그 CSV (열 순서)</a><a class="t3" href="#10.6-기준선-json-파일" data-t="10.6 기준선 json 파일">10.6 기준선 JSON 파일</a><a class="t3" href="#10.7-게이트-오버라이드-mc.gate.override.v1" data-t="10.7 게이트 오버라이드 (mc.gate.override.v1)">10.7 게이트 오버라이드 (mc.gate.override.v1)</a><a class="t2" href="#11.-화면-표시-규칙참고" data-t="11. 화면 표시 규칙(참고)">11. 화면 표시 규칙(참고)</a><a class="t2" href="#12.-개발검증-도구" data-t="12. 개발·검증 도구">12. 개발·검증 도구</a><a class="t2" href="#13.-네이티브-앱-구현-체크리스트" data-t="13. 네이티브 앱 구현 체크리스트">13. 네이티브 앱 구현 체크리스트</a><a class="t2" href="#부록-a.-단위부호-규약-요약" data-t="부록 a. 단위·부호 규약 요약">부록 A. 단위·부호 규약 요약</a><a class="t2" href="#부록-b.-예시-바이트" data-t="부록 b. 예시 바이트">부록 B. 예시 바이트</a></nav>
+<main id="main">
+<div class="meta">생성 2026-09-29 15:01 · 원본 <a href="API.md">API.md</a> · 앱 <a href="motioncue_app.html">motioncue_app.html</a></div>
+<h1 id="motioncue-r-api-설명서">MotionCue-R API 설명서<a class="anc" href="#motioncue-r-api-설명서" title="링크">#</a></h1>
+<p>앱 개발자를 위한 참조 문서입니다. 웹앱(<code>motioncue_app.html</code> + <code>asym_engine.js</code>)과 펌웨어(<code>app.c</code>)가 실제로 주고받는 <strong>통신 프로토콜, 데이터 형식, 설정값, 알고리즘 파라미터, 상태 규칙</strong>을 소스 기준으로 정리했습니다. 네이티브 앱은 이 문서의 규약을 그대로 구현하면 같은 펌웨어와 호환됩니다.</p>
+<div class="tbl"><table><thead><tr><th>항목</th><th>값</th></tr></thead><tbody><tr><td>문서 기준일</td><td>2026-09-29</td></tr><tr><td>펌웨어</td><td><code>at02vib0</code> (Device Information 펌웨어 문자열)</td></tr><tr><td>검출 엔진</td><td><code>asym_engine.js</code> <code>ENGINE_VER=&#x27;A7&#x27;</code></td></tr><tr><td>웹앱</td><td><code>motioncue_app.html</code> (연결 카드 3링크, 진동 펄스 설정 포함)</td></tr><tr><td>원본 소스</td><td>GitHub Pages 저장소의 <code>motioncue_app.html</code>, <code>asym_engine.js</code>; 펌웨어 <code>Simplicity_Studio_Project/bt_soc_empty_freertos/app.c</code></td></tr></tbody></table></div>
+<p>표기 규칙: 바이트는 16진수(<code>0x14</code>), 다바이트 정수는 <strong>리틀엔디언(LE)</strong>, 각도는 도(°), 각속도는 dps(°/s), 가속도는 g, 시각은 ms.</p>
+<hr>
+<h2 id="1.-시스템-구성">1. 시스템 구성<a class="anc" href="#1.-시스템-구성" title="링크">#</a></h2>
+<h3 id="1.1-모듈과-역할">1.1 모듈과 역할<a class="anc" href="#1.1-모듈과-역할" title="링크">#</a></h3>
+<div class="tbl"><table><thead><tr><th>부위</th><th>역할</th><th>앱이 구독하는 특성</th><th>비고</th></tr></thead><tbody><tr><td>몸통 (T)</td><td>각도 센서. 자세(오일러·쿼터니언)와 원시 IMU를 50 Hz로 스트리밍</td><td>Orientation, IMU Data, Status, Battery, Device Information</td><td>비대칭 검출은 이 모듈 데이터만 사용</td></tr><tr><td>왼다리 (L)</td><td>진동자극기</td><td>Control(쓰기), Status, Battery</td><td>센서값 불필요. 연결 직후 <code>0x13</code> identify 버즈</td></tr><tr><td>오른다리 (R)</td><td>진동자극기</td><td>Control(쓰기), Status, Battery</td><td>위와 같음</td></tr></tbody></table></div>
+<ul>
+<li>세 모듈은 <strong>동일 펌웨어</strong>를 탑재하며 각각 폰(중앙장치)에 직접 연결됩니다(허브 없음). 모듈은 자기 부위를 모릅니다.
+</li>
+<li>부위 배정은 <strong>앱에만</strong> 저장됩니다(§10.1 <code>mc.devices.v1</code>). 앱은 저장된 장치 ID로 각 모듈을 다시 찾아 연결합니다.
+</li>
+<li>장치명은 <code>MotionCue-XXXX</code>(XXXX = BLE 주소 하위 2바이트 대문자 16진수, 예 <code>MotionCue-0194</code>)로 세 모듈이 모두 같은 접두어를 씁니다. 부위는 이름으로 구분할 수 없습니다.
+</li></ul>
+<h3 id="1.2-사용-흐름">1.2 사용 흐름<a class="anc" href="#1.2-사용-흐름" title="링크">#</a></h3>
+<ol>
+<li>연결: 몸통 → 왼다리 → 오른다리 순으로 페어링(최초 1회, 이후 자동 연결).
+</li>
+<li>러닝 시작: 3 초 서기(영점·자이로 bias) → 15 초 창 평가 반복.
+</li>
+<li>비대칭 검출(기준선 편차 또는 절대 임계 초과가 같은 방향으로 2창 연속) → 설정한 쪽 다리 모듈에 진동 세트(기본 15 s on / 5 s off × 9회) → 5분 휴식 → 평가 재개.
+</li>
+<li>정지 → 세션 캡처(JSON) 저장 가능. 로그 탭은 연결 중 모든 샘플과 이벤트를 기록해 <code>mclog/1</code> 파일로 내보냅니다.
+</li></ol>
+<hr>
+<h2 id="2.-ble-프로토콜">2. BLE 프로토콜<a class="anc" href="#2.-ble-프로토콜" title="링크">#</a></h2>
+<h3 id="2.1-광고연결">2.1 광고·연결<a class="anc" href="#2.1-광고연결" title="링크">#</a></h3>
+<div class="tbl"><table><thead><tr><th>항목</th><th>값</th></tr></thead><tbody><tr><td>광고</td><td>Legacy, general discoverable, connectable. 인터벌 100 ms(160 × 0.625 ms). 광고 데이터는 스택 자동 생성(Flags + 장치명). 제조사 데이터 없음</td></tr><tr><td>장치명</td><td><code>MotionCue-XXXX</code> (GAP Device Name 특성에도 기록, 최대 20자)</td></tr><tr><td>스캔 필터</td><td>이름 접두어 <code>MotionCue</code></td></tr><tr><td>연결 파라미터</td><td>연결 직후 펌웨어가 요청: 인터벌 <strong>7.5~15 ms</strong>(6~12 × 1.25 ms), latency 0, supervision timeout 5000 ms. 중앙장치가 거절해도 동작하지만 30 ms 이상이면 자세+IMU 알림 100개/s가 링크에 밀려 약 1 s 지연·32/30 Hz 수신이 관측됨</td></tr><tr><td>동시 연결</td><td>모듈당 중앙장치 1개. 연결 중에는 광고를 멈추고, 끊기면(전원 ON 상태) 재광고</td></tr><tr><td>MTU</td><td>기본값으로 충분(가장 긴 알림 14 B)</td></tr><tr><td>페어링/암호화</td><td>없음(모든 특성 open)</td></tr></tbody></table></div>
+<h3 id="2.2-gatt-서비스특성">2.2 GATT 서비스·특성<a class="anc" href="#2.2-gatt-서비스특성" title="링크">#</a></h3>
+<div class="tbl"><table><thead><tr><th>UUID</th><th>이름</th><th>속성</th><th>길이</th><th>내용</th></tr></thead><tbody><tr><td><code>e8a1f000-9c3b-4f2a-8b7d-1a2b3c4d5e6f</code></td><td>MotionCue 서비스</td><td></td><td></td><td>아래 4개 특성을 포함</td></tr><tr><td><code>e8a1f001-9c3b-4f2a-8b7d-1a2b3c4d5e6f</code></td><td>IMU Data</td><td>notify</td><td>12 B</td><td>원시 6축(§2.4). 구독 시에만 전송, ≈50 Hz</td></tr><tr><td><code>e8a1f002-9c3b-4f2a-8b7d-1a2b3c4d5e6f</code></td><td>Control</td><td>write, write-without-response</td><td><strong>최대 4 B</strong></td><td>제어 명령(§2.5)</td></tr><tr><td><code>e8a1f003-9c3b-4f2a-8b7d-1a2b3c4d5e6f</code></td><td>Status</td><td>read, notify</td><td><strong>9 B</strong></td><td>상태(§2.6). 값이 바뀔 때만 notify</td></tr><tr><td><code>e8a1f004-9c3b-4f2a-8b7d-1a2b3c4d5e6f</code></td><td>Orientation</td><td>notify</td><td>14 B</td><td>오일러 + 쿼터니언(§2.3), ≈50 Hz</td></tr><tr><td>Battery Service <code>0x180F</code> / <code>0x2A19</code></td><td>Battery Level</td><td>read, notify</td><td>1 B</td><td>잔량 0~100 %. 약 5 s 주기 갱신(값이 바뀔 때 notify)</td></tr><tr><td>Device Information <code>0x180A</code></td><td><code>0x2A29</code> 제조사, <code>0x2A24</code> 모델, <code>0x2A26</code> 펌웨어</td><td>read</td><td>문자열</td><td>펌웨어 = <code>IMU_STREAM_FW_TAG</code>(8자, 현재 <code>at02vib0</code>)</td></tr></tbody></table></div>
+<p>각 특성의 CCCD(0x2902)에 notify(0x0001)를 쓰면 구독됩니다. 펌웨어는 Orientation, IMU Data, Status, Battery 각각의 구독 상태를 따로 기억하고 구독 중일 때만 notify 합니다.</p>
+<h3 id="2.3-orientation-프레임-e8a1f004-14-b">2.3 Orientation 프레임 (<code>e8a1f004</code>, 14 B)<a class="anc" href="#2.3-orientation-프레임-e8a1f004-14-b" title="링크">#</a></h3>
+<div class="tbl"><table><thead><tr><th>오프셋</th><th>형식</th><th>내용</th><th>변환</th></tr></thead><tbody><tr><td>0</td><td>int16 LE</td><td>roll (centi-deg)</td><td>÷100 → °</td></tr><tr><td>2</td><td>int16 LE</td><td>pitch (centi-deg)</td><td>÷100 → °</td></tr><tr><td>4</td><td>int16 LE</td><td>yaw (centi-deg)</td><td>÷100 → °</td></tr><tr><td>6</td><td>int16 LE</td><td>q w (Q14)</td><td>÷16384</td></tr><tr><td>8</td><td>int16 LE</td><td>q x (Q14)</td><td>÷16384</td></tr><tr><td>10</td><td>int16 LE</td><td>q y (Q14)</td><td>÷16384</td></tr><tr><td>12</td><td>int16 LE</td><td>q z (Q14)</td><td>÷16384</td></tr></tbody></table></div>
+<ul>
+<li>쿼터니언은 <strong>센서 → 월드</strong> 회전, 성분 순서 w,x,y,z. 오일러는 이 쿼터니언에서 계산(roll = atan2(2(wx+yz), 1−2(x²+y²)), pitch = asin(2(wy−zx)), yaw = atan2(2(wz+xy), 1−2(y²+z²))).
+</li>
+<li><strong>중력-up 벡터(센서 좌표계)</strong> = Rᵀ·ẑ:
+<br><code>up = normalize([ 2(xz − wy),  2(yz + wx),  1 − 2(x² + y²) ])</code>
+<br>이 규약이 펌웨어 <code>gpred()</code>와 앱 <code>gravityUp()</code>에서 동일하게 쓰입니다. 부호를 바꾸면 lean 부호가 뒤집힙니다.
+</li>
+<li>앱은 프레임마다 <code>performance.now()</code>(도착 시각, ms)를 타임스탬프로 붙입니다. 펌웨어 프레임에는 시각·시퀀스가 없습니다.
+</li>
+<li>마운트 보정(<code>0x12</code>)은 융합 입력(가속도·자이로)을 보드 Z축 기준 90° 단위로 회전시키므로 오일러·쿼터니언·3D 표시에만 영향을 주고, IMU Data 원시값에는 적용되지 않습니다.
+</li>
+<li>사람기준 roll(<strong>lean</strong>) 계산 절차(앱):
+<ol>
+<li>서기 시점(<code>leanZero()</code> 호출 다음 프레임)의 up 을 <code>leanUp0</code> 로 저장.
+</li>
+<li>매 프레임 <code>lean = leanAbout(leanUp0, up, leanAxis)</code> : 두 up 벡터를 전방축 <code>leanAxis</code>(기본 Z=[0,0,1], 설정 <code>sLeanAxis</code>)에 수직인 평면에 투영한 뒤, 그 축 둘레의 부호 있는 회전각(atan2(cross·axis, dot))을 도 단위로 반환.
+</li>
+<li>드리프트가 없고 마운트 회전에 불변(yaw·pitch 무관)이며, 지표 <code>roll</code> 은 오일러 roll 이 아니라 이 lean 을 씁니다.
+</li></ol>
+</li></ul>
+<h3 id="2.4-imu-data-프레임-e8a1f001-12-b">2.4 IMU Data 프레임 (<code>e8a1f001</code>, 12 B)<a class="anc" href="#2.4-imu-data-프레임-e8a1f001-12-b" title="링크">#</a></h3>
+<div class="tbl"><table><thead><tr><th>오프셋</th><th>형식</th><th>내용</th><th>스케일</th></tr></thead><tbody><tr><td>0,2,4</td><td>int16 LE ×3</td><td>gx, gy, gz</td><td>× <strong>0.07 dps/LSB</strong> (풀스케일 ±2000 dps)</td></tr><tr><td>6,8,10</td><td>int16 LE ×3</td><td>ax, ay, az</td><td>× <strong>0.000488 g/LSB</strong> (풀스케일 ±16 g)</td></tr></tbody></table></div>
+<ul>
+<li>센서 프레임 원시값: <strong>자이로 bias 미차감, 마운트 회전 미적용</strong>. 앱이 서기 구간에서 bias 를 추정해 뺍니다(§5.5).
+</li>
+<li>센서 ODR 104 Hz, 펌웨어 루프 20 ms(50 Hz)에서 최신 샘플을 전송(같은 루프에서 Orientation 다음에 IMU Data 순).
+</li>
+<li>수직축 각속도(지표 <code>yaw_rate</code>) = <code>dot(g − bias, up_acc)</code>; <code>up_acc</code> 는 분석 창의 <strong>가속도 평균 방향</strong>(정규화). 양수 = 위에서 볼 때 반시계(왼쪽으로 도는) 회전.
+</li></ul>
+<h3 id="2.5-control-명령-e8a1f002-쓰기-4-b">2.5 Control 명령 (<code>e8a1f002</code>, 쓰기 ≤ 4 B)<a class="anc" href="#2.5-control-명령-e8a1f002-쓰기-4-b" title="링크">#</a></h3>
+<p>첫 바이트 = opcode. 펌웨어는 opcode 별 <strong>최소 길이</strong> 미만이면 무시합니다(1바이트 명령 허용). 알 수 없는 opcode 는 조용히 무시되므로(오류 응답 없음) 지원 여부는 Status 길이로 판별합니다(§2.6).</p>
+<div class="tbl"><table><thead><tr><th>opcode</th><th>길이</th><th>인자</th><th>동작</th><th>앱 사용처</th></tr></thead><tbody><tr><td><code>0x01</code></td><td>2</td><td>0/1</td><td>안테나 내장/외장</td><td>(개발)</td></tr><tr><td><code>0x02</code></td><td>3</td><td>int16 LE deci-dBm</td><td>TX 파워</td><td>(개발)</td></tr><tr><td><code>0x03</code></td><td>2</td><td>0~100</td><td>진동 세기 <strong>설정값</strong>(NVM3 저장). 재영점 ACK·identify 버즈의 진폭. 진동 중이면 즉시 반영</td><td>미사용(기본 20)</td></tr><tr><td><code>0x04</code> / <code>0x05</code></td><td>3</td><td>u16 LE (×1000)</td><td>Mahony Kp / Ki</td><td>(개발)</td></tr><tr><td><code>0x06</code></td><td>1</td><td></td><td>자이로 바이어스 재보정(정지 상태 약 1 s)</td><td>개발 탭</td></tr><tr><td><code>0x07</code></td><td>1</td><td></td><td>자세 리셋(쿼터니언 단위)</td><td>개발 탭</td></tr><tr><td><code>0x08</code></td><td>1</td><td></td><td>융합 설정 NVM3 저장</td><td>설정 탭</td></tr><tr><td><code>0x09</code></td><td>2</td><td>0~3</td><td>융합 알고리즘 0 complementary / 1 mahony / 2 madgwick / 3 eskf</td><td>설정 <code>sAlgo</code> 변경 시</td></tr><tr><td><code>0x0A</code> / <code>0x0C</code></td><td>7 / 25</td><td></td><td>(4 B 한계로 BLE 에서는 도달 불가)</td><td>—</td></tr><tr><td><code>0x0B</code></td><td>2</td><td>0/1</td><td>ZUPT(정지 검출 기반 보정) on/off</td><td>연결 직후 스위치 상태 동기</td></tr><tr><td><code>0x0D</code></td><td>2</td><td>0/1</td><td>정지 yaw 앵커-락 on/off</td><td>연결 직후 동기</td></tr><tr><td><code>0x0E</code></td><td>1~2</td><td>0 full / 1 heading</td><td><strong>재영점 요청</strong>. full = roll/pitch/yaw 기준 재설정, heading = yaw 만. 정지가 감지되면 적용되고 500 ms ACK 버즈</td><td>러닝 시작 서기 단계에서 <code>0x0E 0x01</code>(표시용, 완료를 기다리지 않음)</td></tr><tr><td><code>0x0F</code></td><td>1</td><td></td><td>재영점 해제(절대 자세 복귀)</td><td>설정 탭</td></tr><tr><td><code>0x10</code></td><td>2</td><td>pct 0~100</td><td><strong>(레거시) 연속 진동</strong> = <code>0x14 [pct, 0, 100]</code>. E-Stop 중 무시</td><td>구형 펌웨어 폴백, 개발 탭</td></tr><tr><td><code>0x11</code></td><td>2</td><td>0/1</td><td><strong>E-Stop</strong> 해제(0)/발동(1). 발동 = 즉시 정지 + 래치. 해제해도 다음 진동 명령까지 off</td><td>시작 시 <code>0x11 0x00</code>, 긴급정지 버튼 <code>0x11 0x01</code></td></tr><tr><td><code>0x12</code></td><td>2</td><td>0~3</td><td>마운트 보정 Z축 0° / +90° / 180° / −90° (NVM3 저장) + 자세 리셋</td><td>설정 <code>sMount</code> 변경 시</td></tr><tr><td><code>0x13</code></td><td>1</td><td></td><td><strong>identify</strong>: 유휴(진동 명령 없음)·비E-Stop 일 때 300 ms 버즈</td><td>다리 모듈 연결 직후</td></tr><tr><td><code>0x14</code></td><td>4</td><td>pct, Hz, duty</td><td><strong>진동 설정·시작</strong>(§8.1)</td><td>자극 on/off</td></tr></tbody></table></div>
+<p><code>0x14</code> 인자 규칙(펌웨어가 스냅):</p>
+<ul>
+<li><code>pct</code> 0~100 (100 초과는 100). 10 kHz PWM 듀티 = 진폭.
+</li>
+<li><code>Hz</code> 0 = 연속. 1~255 는 <code>((Hz+5)/10)*10</code> 으로 10 단위 반올림 후 10~100 으로 클램프.
+</li>
+<li><code>duty</code> 0 = off. 1~99 는 <code>((duty+10)/20)*20</code> 으로 20 단위 반올림(1~9 → 20), 100 이상 = 연속.
+</li>
+<li><code>pct == 0</code> 또는 <code>duty == 0</code> 이면 정지. <code>Hz == 0</code> 또는 스냅 결과 duty 100 이면 연속.
+</li>
+<li>예: <code>14 32 0A 14</code> = 50 %, 10 Hz, 20 % → 100 ms 주기 중 20 ms ON. <code>14 32 64 14</code> = 50 %, 100 Hz, 20 % → 10 ms 주기 중 2 ms ON. <code>14 00 00 00</code> = 정지.
+</li></ul>
+<h3 id="2.6-status-e8a1f003-9-b">2.6 Status (<code>e8a1f003</code>, 9 B)<a class="anc" href="#2.6-status-e8a1f003-9-b" title="링크">#</a></h3>
+<div class="tbl"><table><thead><tr><th>byte</th><th>내용</th><th>값</th></tr></thead><tbody><tr><td>0</td><td>진동 세기 설정값(<code>0x03</code>)</td><td>0~100</td></tr><tr><td>1</td><td>진동 <strong>명령</strong> on/off</td><td>1 = <code>pct &gt; 0</code> 인 명령이 살아 있음. 펄스의 순간 ON/OFF 가 아님</td></tr><tr><td>2</td><td>안테나</td><td>0 내장 / 1 외장 / 0xFF 미설정</td></tr><tr><td>3:4</td><td>TX 파워</td><td>int16 LE deci-dBm</td></tr><tr><td>5</td><td>재영점 상태</td><td>0 idle / 1 정지 대기 / 2 완료(기준 적용 중)</td></tr><tr><td>6</td><td>E-Stop 래치</td><td>1 / 0</td></tr><tr><td>7</td><td>펄스 주파수 Hz</td><td>0 = 연속 또는 off</td></tr><tr><td>8</td><td>펄스 듀티 %</td><td>100 연속, 0 off</td></tr></tbody></table></div>
+<ul>
+<li>구독 직후 <strong>한 번 read</strong> 하면 현재 E-Stop·펄스 지원 여부를 즉시 알 수 있습니다(앱 동작).
+</li>
+<li><strong>capability 규칙</strong>: Status 길이 ≥ 9 → <code>0x14</code>/<code>0x13</code> 지원 펌웨어. 7 → E-Stop 바이트까지만(펄스 없음). 6 → 구형(E-Stop 바이트도 없음). 구형에는 <code>0x10</code> 으로 연속 진동만 보냅니다.
+</li>
+<li>구형(6 B) E-Stop 추론: 앱이 진동을 명령한 지 500 ms 가 지났는데 byte1 이 0 이면 물리 버튼 E-Stop 으로 간주.
+</li>
+<li>어느 모듈에서든 E-Stop 이 관측되면 앱은 <strong>모든 링크에 <code>0x11 0x01</code></strong> 을 보내고 러닝·수동 모드를 정지합니다.
+</li></ul>
+<h3 id="2.7-펌웨어-동작-규칙앱이-전제하는-것">2.7 펌웨어 동작 규칙(앱이 전제하는 것)<a class="anc" href="#2.7-펌웨어-동작-규칙앱이-전제하는-것" title="링크">#</a></h3>
+<div class="tbl"><table><thead><tr><th>항목</th><th>규칙</th></tr></thead><tbody><tr><td>스트리밍</td><td>전원 ON·IMU 정상일 때 20 ms 루프. 루프마다 Orientation → IMU Data 순으로 notify(각각 구독 시). 배터리는 250 루프(≈5 s)마다 측정</td></tr><tr><td>부팅</td><td>자이로 bias 자가보정(정지 가정, 256샘플 ≈1 s) → 융합 초기화. NVM3 에서 진동 세기·마운트·융합 설정 복원</td></tr><tr><td>진동 엔진</td><td><code>0x10</code>/<code>0x14</code>/<code>0x13</code>/<code>0x11</code> 은 모두 진동 엔진(sleeptimer 기반)이 처리. 진동 명령마다 <strong>최대 ON 워치독 130 s</strong> 가 재시작되어 off 명령이 안 와도 자동 정지. 진동 중 EM1 유지</td></tr><tr><td>재영점 ACK</td><td><code>0x0E</code> 완료 시 500 ms 버즈(세기 = byte0 설정값, 0 이면 60 %). 진동 명령 중·E-Stop 중에는 생략</td></tr><tr><td>버튼(PA05)</td><td>짧게(50 ms~2 s): 진동 중이면 <strong>E-Stop</strong>, 아니면 재영점(full) 요청. 2 s 길게: 소프트 전원 토글</td></tr><tr><td>소프트오프</td><td>광고·연결 종료, IMU 전원 off, 진동 off, <strong>E-Stop 래치 해제</strong>, LED off. 소프트온 시 진동은 재개되지 않음</td></tr><tr><td>링크 끊김</td><td>진동 즉시 off(E-Stop 래치는 유지), 모든 구독 해제, 재광고. 비정상 끊김은 supervision 5 s 후 인지</td></tr><tr><td>이름/식별</td><td>장치명은 주소 기반. 부위 정보 없음</td></tr><tr><td>NVM3 키</td><td>0x0001 진동 세기, 0x0002 Mahony 게인(미사용), 0x0003 융합 설정, 0x0004 마운트</td></tr></tbody></table></div>
+<hr>
+<h2 id="3.-앱의-연결-관리-link">3. 앱의 연결 관리 (Link)<a class="anc" href="#3.-앱의-연결-관리-link" title="링크">#</a></h2>
+<p>앱은 부위마다 <code>Link</code> 객체(T/L/R)를 두고 같은 절차로 연결합니다. 네이티브 앱도 아래 순서를 지키면 됩니다.</p>
+<h3 id="3.1-연결-절차역할별">3.1 연결 절차(역할별)<a class="anc" href="#3.1-연결-절차역할별" title="링크">#</a></h3>
+<div class="tbl"><table><thead><tr><th>단계</th><th>몸통(T)</th><th>다리(L/R)</th></tr></thead><tbody><tr><td>1</td><td>GATT 연결 → 서비스 <code>e8a1f000</code></td><td>동일</td></tr><tr><td>2</td><td>Control 특성 확보(필수)</td><td>동일</td></tr><tr><td>3</td><td>Orientation, Status, IMU Data 특성 확보(모두 필수, 없으면 실패)</td><td>Status 만 시도(없어도 됨). Orientation/IMU 는 요청하지 않음</td></tr><tr><td>4</td><td>Orientation notify 구독</td><td>—</td></tr><tr><td>5</td><td>Status notify 구독 + <strong>read 1회</strong> → <code>onStatus</code></td><td>동일</td></tr><tr><td>6</td><td>IMU Data notify 구독(실패해도 계속: yaw_rate 는 오일러 폴백, 러닝 판정은 지표 기반)</td><td>—</td></tr><tr><td>7</td><td>Battery 구독 + read</td><td>동일</td></tr><tr><td>8</td><td>Device Information 읽기(표시)</td><td>—</td></tr><tr><td>9</td><td>쓰기 큐 초기화, <code>connected=true</code>, <code>onConn</code></td><td>동일</td></tr><tr><td>10</td><td><code>0x0B</code>, <code>0x0D</code> 로 UI 스위치 상태 동기(기본 둘 다 1), 기준선 로드</td><td><code>0x13</code> identify 버즈</td></tr></tbody></table></div>
+<h3 id="3.2-등록저장재연결">3.2 등록·저장·재연결<a class="anc" href="#3.2-등록저장재연결" title="링크">#</a></h3>
+<ul>
+<li><strong>최초 등록</strong>: 부위 버튼 → 장치 선택(이름 접두어 <code>MotionCue</code>) → <code>mc.devices.v1[role] = {id, name}</code> 저장 → 연결. 선택한 장치가 이미 다른 부위로 저장돼 있으면 재지정 확인 후 이전 부위에서 제거.
+</li>
+<li><strong>저장된 모듈 연결</strong>: <code>navigator.bluetooth.getDevices()</code> 로 id 일치 장치를 찾아 선택창 없이 연결. 실패 시 <code>watchAdvertisements</code> 로 5 s 광고 대기 후 재시도. API 미지원 브라우저는 선택창(같은 장치가 아니면 재지정 확인). 네이티브 앱은 저장된 MAC/ID 로 직접 연결하면 됩니다.
+</li>
+<li><strong>자동 재연결</strong>: 의도치 않은 끊김이면 1.5 s 간격 최대 12회 재시도(사용자가 해제한 경우 제외).
+</li>
+<li><strong>쓰기 큐</strong>: Control 쓰기는 링크별 <strong>순차 큐</strong>로 직렬화(GATT 동시 쓰기 금지). 미연결이면 명령을 버리고 로그만 남김.
+</li>
+<li><strong>끊김 처리</strong>: 몸통이 끊기면 러닝·수동 모드 정지(연결된 다리 모터 off 명령 전송). 다리가 끊기면 그 다리가 현재 자극 대상일 때만 자극 중단 후 대기 상태로, 세션은 계속.
+</li>
+<li>로거 이벤트: <code>ble {action:&#x27;connect&#x27;|&#x27;disconnect&#x27;, role, name|userDisc}</code>.
+</li></ul>
+<h3 id="3.3-연결-직후-명령-시퀀스-예몸통">3.3 연결 직후 명령 시퀀스 예(몸통)<a class="anc" href="#3.3-연결-직후-명령-시퀀스-예몸통" title="링크">#</a></h3>
+<pre><code>CCCD(ori)=01 00 → CCCD(status)=01 00 → read(status) → CCCD(imu)=01 00 → CCCD(batt)=01 00 → read(batt)
+write ctrl: 0B 01      (ZUPT on)
+write ctrl: 0D 01      (yaw 락 on)
+러닝 시작: 11 00 (E-Stop 해제) → 0E 01 (heading 재영점, 서기) → … 자극: [L] 14 3C 32 64 → 15 s 후 [L] 14 00 00 00</code></pre>
+<hr>
+<h2 id="4.-신호-입력-규약앱-내부">4. 신호 입력 규약(앱 내부)<a class="anc" href="#4.-신호-입력-규약앱-내부" title="링크">#</a></h2>
+<div class="tbl"><table><thead><tr><th>항목</th><th>규약</th></tr></thead><tbody><tr><td>타임스탬프</td><td>알림 <strong>도착 시각</strong>(<code>performance.now()</code>, ms, 단조 증가). 기기 시각 없음</td></tr><tr><td>명목 주기</td><td>20 ms(50 Hz). 실제 수신 주기 <code>dEff</code> 는 창 안 도착 간격의 <strong>중앙값</strong>을 [20, 60] ms 로 클램프해 추정(느린 링크 대응)</td></tr><tr><td>버퍼</td><td>자세 버퍼 <code>{t, roll, yaw, lean, up[3]}</code> 와 원시 버퍼 <code>{t, g[3] dps, a[3] g}</code> 를 각각 <strong>45 s</strong> 유지(오프라인 재생은 무제한)</td></tr><tr><td>도착 지터 보정</td><td>de-burst: 뒤에서부터 <code>t̂_k = min(t_k, t̂_{k+1} − dEff)</code> (평균 간격이 명목의 90 % 미만이면 평균 사용). 창 안 데이터를 50 Hz 균일 격자로 <strong>선형 보간</strong>(외삽 없음), 간격 &gt; 3·dEff 위의 격자점은 <code>flagged</code></td></tr><tr><td>지표</td><td><code>yaw_rate</code>(기본): 원시 자이로(bias 차감)를 창 평균 가속도 방향에 투영한 dps. 원시 버퍼가 1 s 이상 없으면 오일러 yaw 차분 ÷ dEff 로 폴백(<code>srcYaw:&#x27;euler&#x27;</code>). <code>roll</code>: 사람기준 lean(°)</td></tr><tr><td>bias</td><td>서기 3 s 구간의 자이로 평균(그 구간 std(</td></tr><tr><td>up 벡터</td><td>분석은 가속도 평균 up(마운트·재영점 무관). 쿼터니언 up 과의 각도차 <code>upMismatchDeg</code> 는 진단값(경고만)</td></tr><tr><td>단위</td><td>각도 °, 각속도 dps, 가속도 g, 주파수 Hz, 시간 ms(내부)·s(설정)</td></tr></tbody></table></div>
+<hr>
+<h2 id="5.-검출-엔진-asymengine.js-a7">5. 검출 엔진 (asym_engine.js, A7)<a class="anc" href="#5.-검출-엔진-asymengine.js-a7" title="링크">#</a></h2>
+<p>순수 함수 라이브러리(<code>window.MC</code>). DOM·BLE·시계에 접근하지 않으며 시각은 인자로 받습니다. 네이티브 이식 시 이 절의 순서와 상수를 그대로 옮기면 웹앱과 같은 판정이 나옵니다(Python 미러 <code>tests/asym_mirror.py</code> 로 교차검증됨).</p>
+<h3 id="5.1-gate-상수-mc.gate">5.1 GATE 상수 (<code>MC.GATE</code>)<a class="anc" href="#5.1-gate-상수-mc.gate" title="링크">#</a></h3>
+<div class="tbl"><table><thead><tr><th>키</th><th>기본값</th><th>의미</th></tr></thead><tbody><tr><td><code>fsGrid</code></td><td>50</td><td>리샘플 격자 Hz</td></tr><tr><td><code>winSec</code></td><td>15</td><td>기본 분석 창(s). 앱 설정 <code>sWin</code></td></tr><tr><td><code>minSpanFrac</code></td><td>0.98</td><td>창 안 데이터 시간범위가 이 비율 미만 → <code>insufficient_duration</code></td></tr><tr><td><code>maxGapMs</code></td><td>250</td><td>도착 결손 허용(초과 → <code>sample_gap</code>)</td></tr><tr><td><code>staleMs</code></td><td>250</td><td>마지막 샘플이 이보다 오래됨 → <code>stale_data</code>(실시간 분석에만)</td></tr><tr><td><code>maxAbsDeg</code> / <code>maxAbsDps</code></td><td>60 / 1000</td><td>물리 범위 초과 샘플 제거. 제거가 5 % 초과 → <code>sample_invalid</code></td></tr><tr><td><code>refJumpDeg</code> / <code>refJumpMinSamples</code></td><td>30 / 10</td><td>각도 지표의 레벨 시프트(영점 변경) → <code>reference_jump</code></td></tr><tr><td><code>cadMin</code> / <code>cadMax</code></td><td>0.7 / 4.0 Hz</td><td>지표 ACF 주기 탐색 대역(스트라이드)</td></tr><tr><td><code>peakTol</code></td><td>0.03</td><td>ACF 피크 선택 허용(최고 피크 높이 − 0.03 이상인 <strong>가장 짧은 랙</strong> 선택)</td></tr><tr><td><code>minStrength</code></td><td>0.5</td><td>지표 주기성(정규화 ACF 피크 높이) 하한 → 미만이면 <code>weak_periodicity</code></td></tr><tr><td><code>minAngleStd</code> / <code>minRateStd</code></td><td>1.0 ° / 5 dps</td><td>추세제거 신호 RMS 하한 → 미만이면 <code>low_amplitude</code></td></tr><tr><td><code>lobeK</code></td><td>0.15</td><td>로브 진입 임계 = max(lobeK·std, floor)</td></tr><tr><td><code>lobeFloorDeg</code> / <code>lobeFloorDps</code></td><td>0.5 / 2</td><td>로브 진입 임계 하한</td></tr><tr><td><code>lobeExitFrac</code></td><td>0.5</td><td>로브 이탈 = 진입 임계 × 0.5(히스테리시스)</td></tr><tr><td><code>minLobeFrac</code> / <code>minLobeSamples</code></td><td>0.08 / 3</td><td>로브 최소 길이 = max(3, round(0.08·fs/f_pre)) 샘플(짧으면 스파이크로 제거)</td></tr><tr><td><code>flatRatio</code></td><td>1.15</td><td>극값 &lt; 1.15 × 로브 평균 절대값 → <code>flat</code>(극값 불명확)</td></tr><tr><td><code>minLobeRel</code></td><td>0.3</td><td>극값 &lt; 0.3 × 중앙 극값 → <code>weak</code></td></tr><tr><td><code>lobeCountLo</code> / <code>lobeCountHi</code></td><td>0.5 / 1.5</td><td>로브 수가 기대치(2·win·f)의 0.5~1.5배 밖 → <code>lobe_count</code></td></tr><tr><td><code>pairMin</code> / <code>pairMax</code></td><td>0.2 / 0.8</td><td>짝 조건: 반대부호 인접 로브 극값 간격 ∈ [0.2, 0.8]·T</td></tr><tr><td><code>minPairs</code></td><td>6</td><td>짝 수 미만 → <code>data_gaps</code>(결손 기인) 또는 <code>unclear_alternation</code></td></tr><tr><td><code>siCapPct</code></td><td>60</td><td>|SI| 상한 초과 → <code>unclear_alternation</code></td></tr><tr><td><code>trimK</code> / <code>trimMinPairs</code></td><td>1 / 8</td><td>짝 ≥ 8 이면 부호별 상·하위 1개씩 절사 평균, 아니면 중앙값</td></tr><tr><td><code>tDisagree</code></td><td>0.30</td><td>스트라이드 후보(acc·metric·lobe)가 중앙값에서 30 % 넘게 이탈 → outlier</td></tr><tr><td><code>turnMeanDps</code> / <code>turnSegDps</code> / <code>turnSegSec</code></td><td>15 / 25 / 2</td><td>(yaw_rate) 창 평균 |mean| &gt; 15 또는 2 s 구간(1 s hop) 평균 &gt; 25 → <code>turn_contamination</code></td></tr><tr><td><code>rampRatio</code></td><td>2.0</td><td>창 앞 ⅓ 과 뒤 ⅓ 의 std 비 &gt; 2 → <code>amplitude_ramp</code></td></tr><tr><td><code>eMinFundFrac</code></td><td>0.35</td><td>고조파비 계산 시 기본파 진폭이 0.35·std 미만이면 E = null</td></tr><tr><td><code>stationaryMaxFrac</code></td><td>0.2</td><td>1 s 구간 중 정지(std|a| &lt; 0.05 g) 비율 &gt; 0.2 → <code>not_running/stationary</code></td></tr><tr><td><code>acc.stepMin</code> / <code>acc.stepMax</code></td><td>1.5 / 5.0 Hz</td><td>|a| 스텝 케이던스 대역(90~300 spm)</td></tr><tr><td><code>acc.enterStdG</code> / <code>acc.exitStdG</code></td><td>0.20 / 0.15 g</td><td>블록 러닝 판정 std|a| 임계(직전 창이 러닝이면 exit 값 사용)</td></tr><tr><td><code>acc.minStrength</code></td><td>0.35</td><td>|a| ACF 주기성 하한</td></tr><tr><td><code>acc.blockSec</code> / <code>acc.hopSec</code> / <code>acc.blockFrac</code></td><td>3 / 1 / 0.6</td><td>3 s 블록을 1 s 간격으로 평가, 통과 블록 ≥ 60 % → 러닝</td></tr><tr><td><code>acc.stationaryStdG</code></td><td>0.05 g</td><td>정지 판정·bias 추정 허용 std</td></tr><tr><td><code>acc.enterSec</code> / <code>acc.exitSec</code></td><td>2 / 3 s</td><td>라이브 표시용 히스테리시스(연속 통과/실패 시간)</td></tr><tr><td><code>acc.subHarm</code></td><td>0.5</td><td>|a| ACF 에서 선택 랙의 절반 위치에 높이 ≥ 0.5×인 피크가 있으면 그것을 스텝으로(스텝/스트라이드 2배 모호 해소)</td></tr><tr><td><code>standSec</code></td><td>3</td><td>서기(영점·bias) 시간</td></tr><tr><td><code>baseline.minWindows</code></td><td>8</td><td>기준선 저장에 필요한 ok 창 수</td></tr><tr><td><code>baseline.floorPct</code> / <code>baseline.kSigma</code></td><td>5 / 2</td><td>개입 임계 = max(2σ, 5 %p)</td></tr><tr><td><code>baseline.consecutive</code></td><td>2</td><td>같은 방향 초과 연속 창 수</td></tr><tr><td><code>baseline.offsetWindows</code></td><td>3</td><td>세션 첫 3개 ok 창이 모두 같은 방향 초과 → <code>baseline_mismatch</code> 경고</td></tr><tr><td><code>baseline.staleDays</code></td><td>49</td><td>기준선 재측정 권고(7주)</td></tr><tr><td><code>baseline.binSpm</code></td><td>15</td><td>케이던스 구간 폭(spm)</td></tr></tbody></table></div>
+<p><code>MC.gateWith(override)</code> 는 GATE 위에 오버라이드를 얹은 사본을 만듭니다(<code>acc</code>, <code>baseline</code> 은 한 단계 깊게 병합). 앱의 설정 탭 "게이트 튜닝"이 이를 <code>mc.gate.override.v1</code> 로 저장합니다(§10.7).</p>
+<h3 id="5.2-분석-파이프라인-asymengine.analyzerangemetric-t0-t1-tnow">5.2 분석 파이프라인 (<code>AsymEngine.analyzeRange(metric, t0, t1, tNow)</code>)<a class="anc" href="#5.2-분석-파이프라인-asymengine.analyzerangemetric-t0-t1-tnow" title="링크">#</a></h3>
+<p>창 <code>[t0, t1]</code>(ms)의 지표 신호를 만들고 순서대로 게이트를 통과시킵니다. 어느 단계에서든 실패하면 그 사유로 즉시 반환합니다.</p>
+<p><strong>A. 창 신호 생성(<code>windowSig</code>)</strong> — 실패 상태는 모두 <code>hold</code></p>
+<ol>
+<li>원천 샘플 수집: <code>[t0−2dt, t1+2dt]</code> (dt = 20 ms). 4개 미만 → <code>insufficient_duration</code>.
+</li>
+<li>정합성: 비유한값·\|v\| &gt; maxAbs 제거. 제거율 &gt; 5 % 또는 4개 미만 → <code>sample_invalid</code>.
+</li>
+<li>신선도(tNow 가 주어진 실시간 분석만): <code>tNow − 마지막 샘플 &gt; 250 ms</code> → <code>stale_data</code>.
+</li>
+<li><code>dEff</code> 추정 → de-burst → 시간범위 <code>span &lt; 0.98·win</code> → <code>insufficient_duration</code>.
+</li>
+<li>결손: 최대 간격 &gt; 250 ms → <code>sample_gap</code>. <code>coverage = 1 − Σ_{gap&gt;1.5·dEff}(gap − dEff) / win</code>.
+</li>
+<li>50 Hz 격자 리샘플(격자 시작 <code>tGrid0 = max(t0, t̂₀)</code>, 점 수 n &lt; 20 → <code>insufficient_duration</code>).
+</li>
+<li>(각도 지표) 레벨 시프트 검사 → <code>reference_jump</code>.
+</li>
+<li><code>meanOffset = mean(y)</code>, <code>sig = detrend(y)</code>(선형 추세 제거) — 이후 모든 게이트는 <code>sig</code> 기준(선회 게이트만 추세제거 전 <code>y</code>).
+</li></ol>
+<p><strong>B. 판정(<code>analyzeRange</code>)</strong></p>
+<div class="tbl"><table><thead><tr><th>순서</th><th>단계</th><th>실패 상태/사유</th></tr></thead><tbody><tr><td>1</td><td><code>upMismatchDeg</code> 계산(진단)</td><td>—</td></tr><tr><td>2</td><td>(yaw_rate) 선회 게이트 <code>turnGate(y)</code></td><td><code>hold/turn_contamination</code></td></tr><tr><td>3</td><td><code>std = RMS(sig)</code></td><td>—</td></tr><tr><td>4</td><td>램프 게이트 <code>rampGate(sig)</code></td><td><code>hold/amplitude_ramp</code></td></tr><tr><td>5</td><td>원시 버퍼가 살아 있으면(<code>runSrc=&#x27;acc&#x27;</code>): 정지 비율 <code>stats()</code></td><td><code>not_running/stationary</code></td></tr><tr><td>6</td><td>창 러닝 판정 <code>windowRunning()</code> → <code>running</code>, <code>stepSpm</code>, <code>accStdG</code>, <code>strideHz = stepSpm/120</code></td><td><code>not_running/not_running</code></td></tr><tr><td>7</td><td>진폭 하한 <code>std &lt; minRateStd(또는 minAngleStd)</code></td><td><code>info/low_amplitude</code></td></tr><tr><td>8</td><td>지표 ACF <code>acfPeriod(sig, 0.7~4 Hz)</code> → <code>metricHz</code>, <code>strength</code></td><td><code>info/weak_periodicity</code> (f 없음 또는 strength &lt; 0.5)</td></tr><tr><td>9</td><td>원시 버퍼 없으면 <code>running=true, runSrc=&#x27;metric&#x27;</code></td><td>—</td></tr><tr><td>10</td><td>로브 추출 <code>lobes(sig, gate)</code>; gate = max(0.15·std, floor); 최소 길이는 <strong>지표 ACF 주기</strong> 기준</td><td>—</td></tr><tr><td>11</td><td>스트라이드 교차검증 <code>resolveStride({acc, metric, lobe})</code> → 중앙값 <code>strideHz</code>, <code>strideSrc=&#x27;resolved:*&#x27;</code></td><td><code>hold/period_ambiguous</code> (후보 간 전부 불일치)</td></tr><tr><td>12</td><td>|a| 케이던스가 outlier 면 <code>stepSpm = 120·strideHz</code>, <code>stepSrc=&#x27;derived&#x27;</code></td><td>—</td></tr><tr><td>13</td><td>로브 수 <code>nLobes ∉ [0.5, 1.5]·(2·win·f)</code></td><td><code>hold/lobe_count</code></td></tr><tr><td>14</td><td>짝짓기 <code>pairLobes(kept, T=fs/f, 0.2~0.8)</code> → <code>nPairs</code>; 6 미만이면 coverage &lt; 0.9 또는 <code>gapped</code> 로브 ≥ 2</td><td><code>hold/data_gaps</code>, 아니면 <code>info/unclear_alternation</code></td></tr><tr><td>15</td><td>절사 대표값 <code>trimmedSI</code> → 이상 로브 있으면 0레벨 보정 <code>zeroShift</code> → <code>signedSI = (L − R)/(L + R)·100</code></td><td>—</td></tr><tr><td>16</td><td>고조파비 <code>E = 100·A(2f)/A(f)</code> (Hann Goertzel, 진단)</td><td>—</td></tr><tr><td>17</td><td>로브 교대 주기가 outlier</td><td><code>info/period_ambiguous</code></td></tr><tr><td>18</td><td><code>si &gt; 60</code></td><td><code>info/unclear_alternation</code></td></tr><tr><td>19</td><td>성공</td><td><code>ok</code></td></tr></tbody></table></div>
+<p><code>analyze(winSec, metric, _, tNow)</code> 는 버퍼 마지막 샘플 시각 <code>tLast</code> 기준 <code>[tLast − win, tLast]</code> 를 분석합니다(앱의 실시간 창).</p>
+<h3 id="5.3-상태사유-표">5.3 상태·사유 표<a class="anc" href="#5.3-상태사유-표" title="링크">#</a></h3>
+<div class="tbl"><table><thead><tr><th>state</th><th>의미</th><th>앱 동작</th></tr></thead><tbody><tr><td><code>ok</code></td><td>유효한 SI</td><td>기준선/절대 임계 편차 → 판정기(§7.3)</td></tr><tr><td><code>hold</code></td><td>입력 품질·선회 등으로 판정 보류</td><td>대기(<code>sWait</code>) 후 재평가. 판정기 카운터 유지</td></tr><tr><td><code>not_running</code></td><td>러닝 아님</td><td>대기 후 재평가. 판정기 카운터 <strong>리셋</strong></td></tr><tr><td><code>info</code></td><td>러닝이지만 SI 를 신뢰할 수 없음</td><td>대기 후 재평가. 카운터 유지</td></tr></tbody></table></div>
+<div class="tbl"><table><thead><tr><th>reason</th><th>state</th><th>뜻(앱 표시 문구)</th></tr></thead><tbody><tr><td><code>insufficient_duration</code></td><td>hold</td><td>창 미충족(시간 부족)</td></tr><tr><td><code>stale_data</code></td><td>hold</td><td>수신 지연(최근 샘플 없음)</td></tr><tr><td><code>sample_gap</code></td><td>hold</td><td>수신 결손</td></tr><tr><td><code>sample_invalid</code></td><td>hold</td><td>샘플 이상</td></tr><tr><td><code>reference_jump</code></td><td>hold</td><td>기준 급변(영점 변경?)</td></tr><tr><td><code>turn_contamination</code></td><td>hold</td><td>선회 중</td></tr><tr><td><code>amplitude_ramp</code></td><td>hold</td><td>진폭 급변</td></tr><tr><td><code>period_ambiguous</code></td><td>hold 또는 info</td><td>주기 불명확</td></tr><tr><td><code>lobe_count</code></td><td>hold</td><td>로브 수 비정상</td></tr><tr><td><code>data_gaps</code></td><td>hold</td><td>결손으로 피크 손실</td></tr><tr><td><code>stationary</code></td><td>not_running</td><td>정지 구간 포함</td></tr><tr><td><code>not_running</code></td><td>not_running</td><td>러닝 아님</td></tr><tr><td><code>low_amplitude</code></td><td>info</td><td>흔들림 작음(안정)</td></tr><tr><td><code>weak_periodicity</code></td><td>info</td><td>주기성 약함</td></tr><tr><td><code>unclear_alternation</code></td><td>info</td><td>좌우 교대 불명확</td></tr><tr><td><code>no_raw_data</code></td><td>(예약)</td><td>IMU raw 미수신</td></tr><tr><td><code>baseline_mismatch</code></td><td>(판정기 플래그)</td><td>기준선 불일치</td></tr></tbody></table></div>
+<h3 id="5.4-결과-객체-r">5.4 결과 객체 R<a class="anc" href="#5.4-결과-객체-r" title="링크">#</a></h3>
+<div class="tbl"><table><thead><tr><th>필드</th><th>형식</th><th>내용</th></tr></thead><tbody><tr><td><code>state</code>, <code>reason</code></td><td>string</td><td>§5.3</td></tr><tr><td><code>metric</code>, <code>t0</code>, <code>t1</code>, <code>winSec</code></td><td></td><td>분석 창</td></tr><tr><td><code>running</code>, <code>runSrc</code></td><td>bool, <code>&#x27;acc&#x27;</code>/<code>&#x27;metric&#x27;</code></td><td>러닝 판정과 근거</td></tr><tr><td><code>accStdG</code>, <code>stationaryFrac</code></td><td>number</td><td>창 |a| std(블록 중앙값), 정지 비율</td></tr><tr><td><code>stepSpm</code>, <code>stepSrc</code></td><td>number, <code>&#x27;acc&#x27;</code>/<code>&#x27;derived&#x27;</code></td><td>스텝 케이던스(분당 걸음)</td></tr><tr><td><code>strideHz</code>, <code>strideSrc</code>, <code>strideCands</code></td><td>number, string, <code>{acc, metric, lobe}</code></td><td>스트라이드 주파수(교차검증 결과와 후보)</td></tr><tr><td><code>metricHz</code>, <code>strength</code></td><td>number</td><td>지표 ACF 주기·주기성(0~1)</td></tr><tr><td><code>std</code>, <code>meanOffset</code></td><td>number</td><td>추세제거 신호 RMS, 창 평균(자세 편향; roll 지표에서 의미)</td></tr><tr><td><code>rampRatio</code>, <code>turnMeanDps</code>, <code>turnSegMaxDps</code></td><td>number</td><td>게이트 진단값</td></tr><tr><td><code>gate</code></td><td>number</td><td>로브 진입 임계</td></tr><tr><td><code>nLobes</code>, <code>nPairs</code></td><td>int</td><td>로브 수(short 제외), 짝 수</td></tr><tr><td><code>meanL</code>, <code>meanR</code></td><td>number</td><td>양(+)/음(−) 로브 대표 진폭(0레벨 보정 후)</td></tr><tr><td><code>signedSI</code>, <code>si</code>, <code>side</code></td><td>number, number, <code>&#x27;좌&#x27;</code>/<code>&#x27;우&#x27;</code></td><td>부호 있는 SI(%), 절대값, 부호 규약상 큰 쪽(<code>signedSI ≥ 0</code> → 좌)</td></tr><tr><td><code>trimmedCount</code>, <code>outlierFlag</code>, <code>zeroShift</code>, <code>siMethod</code></td><td></td><td>절사 개수(4·trimK 또는 0), 이상 피크 존재, 0레벨 보정량, <code>&#x27;trim&#x27;</code>/<code>&#x27;median&#x27;</code></td></tr><tr><td><code>E</code></td><td>number 또는 null</td><td>고조파 진폭비 %(진단)</td></tr><tr><td><code>coverage</code>, <code>gapMaxMs</code>, <code>devHz</code></td><td>number</td><td>결손 지표, 실제 수신률(1000/dEff)</td></tr><tr><td><code>srcYaw</code>, <code>upMismatchDeg</code></td><td><code>&#x27;raw&#x27;</code>/<code>&#x27;euler&#x27;</code>/null, number</td><td>yaw_rate 원천, up 불일치 각</td></tr><tr><td><code>peaks[]</code></td><td><code>{i, t, v, sign, role, start, end}</code></td><td>로브 목록. role: <code>paired</code>, <code>unpaired</code>, <code>edge</code>, <code>short</code>, <code>flat</code>, <code>weak</code>, <code>gapped</code></td></tr><tr><td><code>sig</code>, <code>tGrid0</code>, <code>fs</code></td><td>Float64Array, ms, Hz</td><td>분석에 쓴 격자 신호</td></tr><tr><td><code>engine</code></td><td><code>&#x27;A7&#x27;</code></td><td></td></tr><tr><td>(레거시) <code>ok</code>, <code>cadence</code>, <code>harmE</code>, <code>asymPct</code></td><td></td><td><code>state===&#x27;ok&#x27;</code>, <code>strideHz</code>, <code>E‖0</code>, <code>si‖0</code></td></tr></tbody></table></div>
+<h3 id="5.5-러닝-판정과-스텝-케이던스-rawengine">5.5 러닝 판정과 스텝 케이던스 (<code>RawEngine</code>)<a class="anc" href="#5.5-러닝-판정과-스텝-케이던스-rawengine" title="링크">#</a></h3>
+<ul>
+<li><code>accNormSamples</code>: \|a\| = √(ax²+ay²+az²) (g).
+</li>
+<li><code>stepCadence(t0,t1)</code>: \|a\| 를 격자화·평균 제거 → <code>stdG = RMS</code> → 정규화 ACF 를 1.5~5 Hz 에서 탐색(포물선 보간, <code>subHarm</code> 규칙) → <code>{fStep, strength, stdG}</code>.
+</li>
+<li><code>windowRunning(t0,t1)</code>: 3 s 블록을 1 s 간격으로 평가. 블록 통과 = <code>stdG &gt; thr</code> <strong>and</strong> <code>fStep</code> 존재 <strong>and</strong> <code>strength &gt; 0.35</code> (thr = 0.20 g, 직전 창이 러닝이면 0.15 g). 통과 비율 ≥ 0.6 → 러닝. <code>stepSpm</code> = 통과 블록 <code>60·fStep</code> 의 중앙값, <code>stdG</code> = 블록 std 의 중앙값.
+</li>
+<li><code>stats(t0,t1)</code>: 1 s 구간마다 std\|a\| &lt; 0.05 g 이면 정지 → <code>stationaryFrac</code>.
+</li>
+<li><code>estimateBias(t0,t1)</code>: 구간 자이로 평균. <code>ok = std|a| &lt; 0.05 g</code>.
+</li>
+<li><code>tick(tNow)</code>(라이브 표시, 1 s 마다): 최근 3 s 블록으로 통과/실패를 판단하고 2 s 연속 통과 → running, 3 s 연속 실패 → 해제. 연결 카드 "러닝감지" 표시에만 사용(판정에는 <code>windowRunning</code>).
+</li></ul>
+<h3 id="5.6-로브짝si-상세">5.6 로브·짝·SI 상세<a class="anc" href="#5.6-로브짝si-상세" title="링크">#</a></h3>
+<ol>
+<li><strong>로브 추출</strong> <code>lobes(sig, g)</code>: \|x\| &gt; g 에서 진입, 같은 부호이고 \|x\| ≥ 0.5·g 인 동안 유지(부호 반전이나 이탈 임계 미만이면 종료). 로브당 극값 1개(최대 \|x\|). 규칙 순서: ① 동부호 인접 로브 병합(M자 딥) ② <code>short</code>(&lt; minLen) 제거 후 재병합 ③ 극값이 결손 보간점이면 <code>gapped</code> ④ <code>flat</code>(극값 &lt; 1.15 × 로브 평균 \|x\|) ⑤ <code>weak</code>(극값 &lt; 0.3 × 중앙 극값) ⑥ 남은 후보의 양 끝은 <code>edge</code>. 역할이 없는 로브만 짝 후보(<code>kept</code>).
+</li>
+<li><strong>로브 교대 주기</strong> <code>lobeAlternationT</code>: 한 로브 건너 같은 부호 로브의 극값 간격 중앙값(간격 3개 미만이면 null).
+</li>
+<li><strong>스트라이드 교차검증</strong> <code>resolveStride</code>: 후보 {acc: stepSpm/120, metric: 지표 ACF, lobe: fs/T_lobe} 의 중앙값 f. 각 후보가 \|c − f\|/f &gt; 0.30 이면 outlier. 후보 ≥ 2 이고 하나 빼고 전부 outlier → ambiguous.
+</li>
+<li><strong>짝짓기</strong> <code>pairLobes</code>: 후보를 시간순으로 보며 인접 두 로브가 반대 부호이고 극값 간격 ∈ [0.2, 0.8]·T 이면 짝(pos, neg). 짝은 겹치지 않음.
+</li>
+<li><strong>절사 대표값</strong> <code>trimmedSI</code>: 짝 ≥ 8 → 부호별로 정렬 후 상·하위 1개씩 제외한 평균(<code>trimmedCount = 4</code>), 아니면 중앙값. 제외(또는 전체)된 로브 중 대표값의 ×1.5 초과·×0.5 미만인 것이 <code>outliers</code>(→ <code>outlierFlag</code>).
+</li>
+<li><strong>0레벨 보정</strong> <code>zeroShiftFromOutliers</code>: 이상 로브의 초과 면적이 평균 제거를 밀어낸 만큼 되돌림. <code>L&#x27; = L − shift</code>, <code>R&#x27; = R + shift</code>.
+</li>
+<li><strong>SI</strong>: <code>signedSI = (L&#x27; − R&#x27;)/(L&#x27; + R&#x27;)·100</code>, <code>si = |signedSI|</code>, <code>side = signedSI ≥ 0 ? &#x27;좌&#x27; : &#x27;우&#x27;</code>. 양(+) 로브 = 좌 규약은 실측 전 잠정이며 앱 설정 <code>sSignFlip</code>(표시 반전)으로 교정합니다.
+</li>
+<li><strong>고조파비</strong> <code>E</code>: Hann 창 Goertzel 로 f 와 2f 진폭을 구해 <code>100·A(2f)/A(f)</code>. 기본파 진폭이 0.35·std 미만이면 null. 표시·기록만(판정 미사용).
+</li></ol>
+<h3 id="5.7-스냅샷-asymengine.snapshotmetric-showt0-showt1-at0-at1">5.7 스냅샷 (<code>AsymEngine.snapshot(metric, {showT0, showT1, aT0, aT1})</code>)<a class="anc" href="#5.7-스냅샷-asymengine.snapshotmetric-showt0-showt1-at0-at1" title="링크">#</a></h3>
+<p>표시 구간 <code>[showT0, showT1]</code> 의 격자 신호(평균 오프셋 제거)와 분석 구간 <code>[aT0, aT1]</code> 의 R 을 함께 반환: <code>{metric, srcYaw, R, disp:{t0, y[], dt}, span, aStart, aStop, peaks:[{…, tRel}], gate}</code>. 게이트에서 조기 종료돼 로브가 없으면 표시용으로 예비 주기로 로브·짝만 다시 계산합니다.</p>
+<hr>
+<h2 id="6.-러닝-자동-중재-상태기계-proto">6. 러닝 자동 중재 상태기계 (<code>proto</code>)<a class="anc" href="#6.-러닝-자동-중재-상태기계-proto" title="링크">#</a></h2>
+<h3 id="6.1-상태-전이">6.1 상태 전이<a class="anc" href="#6.1-상태-전이" title="링크">#</a></h3>
+<div class="tbl"><table><thead><tr><th>상태</th><th>진입 시 동작</th><th>지속</th><th>다음</th></tr></thead><tbody><tr><td><code>idle</code></td><td>진동 off, 세션 캡처 종료·저장</td><td>—</td><td>시작 버튼 → <code>stand</code></td></tr><tr><td><code>stand</code> (준비·서기)</td><td>E-Stop 해제(<code>0x11 0x00</code>, 시작 시), <code>0x0E 0x01</code> 전송, lean 영점(<code>leanZero</code>), 세션 캡처 시작(3 s 사전구간 포함)</td><td><code>standSec</code> = 3 s</td><td>자이로 bias 추정(§4) → <code>detect</code></td></tr><tr><td><code>detect</code> (평가)</td><td>시작 마커 기록</td><td><code>sWin</code> s</td><td><code>evalAsym</code></td></tr><tr><td><code>evalAsym</code></td><td><code>analyze(sWin)</code> → 로그·캡처에 창 기록 → 편차·판정기</td><td>즉시</td><td>ok 가 아니면 <code>wait</code>; 개입이면 <code>stim</code>; 아니면 <code>wait</code></td></tr><tr><td><code>wait</code> (대기)</td><td>진동 off</td><td><code>sWait</code> s</td><td><code>detect</code></td></tr><tr><td><code>stim</code> (중재)</td><td><code>vibSide</code> 결정(§8.2). 대상 미연결이면 로그 후 <code>wait</code></td><td>세트 × (<code>sOn</code> 진동 + <code>sOff</code> 휴지)</td><td>세트 완료 → <code>pause</code></td></tr><tr><td><code>pause</code> (평가 중지)</td><td>진동 off</td><td><code>sPause</code> s</td><td><code>detect</code></td></tr></tbody></table></div>
+<ul>
+<li>타이머는 200 ms 틱으로 남은 시간을 표시하며, 정지 버튼은 어느 상태에서든 <code>idle</code> 로 갑니다.
+</li>
+<li>기준 측정 모드(<code>mode:&#x27;baseline&#x27;</code>, §7.1)는 <code>detect → evalBaseline → detect</code> 를 대기 없이 반복하고 진동을 내지 않습니다.
+</li>
+<li>개입 판정 만료 시간(판정기 <code>expireMs</code>) = <code>(2·sWin + sWait)·1000</code> ms.
+</li></ul>
+<h3 id="6.2-evalasym-상세">6.2 evalAsym 상세<a class="anc" href="#6.2-evalasym-상세" title="링크">#</a></h3>
+<ol>
+<li><code>r = analyze(sWin, metric)</code>.
+</li>
+<li>표시: 케이던스(<code>stepSpm</code>, <code>strideHz</code>), 러닝 여부·std, 고조파비, 평균 편향, 짝 수·절사·이상피크.
+</li>
+<li><code>dev = (r.state===&#x27;ok&#x27;) ? (baseline ? baselineDeviation(baseline, r) : absoluteDeviation(r, sThr)) : null</code>.
+</li>
+<li><code>d = decider.feed(r, dev, now, expireMs)</code>.
+</li>
+<li>CSV 로그 행 추가(§10.5), 로거 <code>window</code> 이벤트, 세션 캡처 <code>windows[]</code> 에 창 기록.
+</li>
+<li><code>state ≠ ok</code> → 상태줄에 사유 표시, <code>wait</code>.
+</li>
+<li><code>ok</code>: SI 와 편차 표시(게이지는 좌=왼쪽 채움, 우=오른쪽). <code>d.mismatch</code> 첫 발생 시 기준선 불일치 경고.
+</li>
+<li><code>d.action===&#x27;intervene&#x27;</code> → <code>side = LR(d.sign)</code> → <code>stim</code>; 아니면 <code>wait</code>(초과 카운트 표시).
+</li></ol>
+<p><code>LR(sign)</code>: <code>left = (sign &gt; 0) !== sSignFlip</code> → <code>&#x27;좌&#x27;</code> 아니면 <code>&#x27;우&#x27;</code>.</p>
+<hr>
+<h2 id="7.-기준선baseline과-판정">7. 기준선(baseline)과 판정<a class="anc" href="#7.-기준선baseline과-판정" title="링크">#</a></h2>
+<h3 id="7.1-기준-측정">7.1 기준 측정<a class="anc" href="#7.1-기준-측정" title="링크">#</a></h3>
+<ul>
+<li>러닝 탭 "기준 측정" 시작 → <code>mode=&#x27;baseline&#x27;</code> 으로 상태기계 실행. <code>ok</code> 창의 <code>signedSI</code>(+ <code>E</code>, <code>stepSpm</code>, <code>meanOffset</code>)만 <code>BaselineStats</code> 에 누적. <code>minWindows</code>(8) 이상이면 정지 시 저장.
+</li>
+<li>저장 키: <code>mc.baseline.v1.&lt;장치명&gt;.&lt;metric&gt;</code> (localStorage). 몸통 모듈 이름·지표별로 따로 보관.
+</li></ul>
+<h3 id="7.2-기준선-json-schema-1">7.2 기준선 JSON (schema 1)<a class="anc" href="#7.2-기준선-json-schema-1" title="링크">#</a></h3>
+<div class="tbl"><table><thead><tr><th>필드</th><th>내용</th></tr></thead><tbody><tr><td><code>schema</code></td><td>1</td></tr><tr><td><code>metric</code></td><td><code>&#x27;yaw_rate&#x27;</code> 또는 <code>&#x27;roll&#x27;</code></td></tr><tr><td><code>forwardAxis</code></td><td>전방축 인덱스(0 X, 1 Y, 2 Z)</td></tr><tr><td><code>signFlip</code></td><td>측정 당시 표시 반전 여부</td></tr><tr><td><code>deviceId</code></td><td>몸통 장치명</td></tr><tr><td><code>engineVer</code></td><td><code>&#x27;A7&#x27;</code></td></tr><tr><td><code>winSec</code></td><td>창 길이(가져오기 시 현재 설정과 같아야 함)</td></tr><tr><td><code>binSpm</code></td><td>15</td></tr><tr><td><code>date</code></td><td>ISO 문자열</td></tr><tr><td><code>n</code>, <code>mu</code>, <code>sigma</code></td><td>ok 창 수, signedSI 평균·표준편차(모집단)</td></tr><tr><td><code>eMu</code>, <code>eSigma</code></td><td>고조파비 평균·표준편차</td></tr><tr><td><code>spmMean</code></td><td>평균 케이던스</td></tr><tr><td><code>offMu</code></td><td>평균 편향 평균</td></tr><tr><td><code>bins</code></td><td><code>{&quot;165&quot;: {n, mu, sigma}, …}</code> — 케이던스 15 spm 구간별 통계</td></tr></tbody></table></div>
+<p>가져오기 검증(<code>validateBaseline</code>): schema 1, <code>n ≥ 1</code>, <code>mu</code>/<code>sigma</code> 유한수, (선택) 지표·창 길이 일치. 49일이 지나면 재측정 권고(<code>baselineIsStale</code>).</p>
+<h3 id="7.3-편차와-판정기">7.3 편차와 판정기<a class="anc" href="#7.3-편차와-판정기" title="링크">#</a></h3>
+<ul>
+<li><code>baselineDeviation(base, R)</code>: 창 케이던스 구간의 <code>bins[k]</code> 가 <code>n ≥ 4</code> 이면 그 구간의 μ/σ, 아니면 전체. <code>thr = max(2σ, 5)</code>, <code>delta = signedSI − μ</code>, <code>z = delta/σ</code>, <code>exceed = |delta| &gt; thr</code>.
+</li>
+<li>기준선이 없으면 <code>absoluteDeviation(R, sThr)</code>: μ = 0, <code>exceed = |signedSI| ≥ sThr</code>.
+</li>
+<li><code>Decider.feed(R, dev, t, expireMs)</code>:
+<ul>
+<li><code>not_running</code> → 카운터 리셋. <code>hold</code>/<code>info</code> → 카운터 유지.
+</li>
+<li>마지막 ok 창 이후 <code>expireMs</code> 경과 → 리셋.
+</li>
+<li>초과이고 부호가 직전과 같으면 <code>count++</code>, 다르면 <code>count = 1</code>; 미초과면 리셋.
+</li>
+<li><code>count ≥ 2</code> → <code>{action:&#x27;intervene&#x27;, sign, delta}</code> 후 리셋.
+</li>
+<li>세션 첫 3개 ok 창이 모두 같은 방향으로 초과 → <code>mismatch = true</code>(경고만, 개입 규칙 동일).
+</li></ul>
+</li></ul>
+<hr>
+<h2 id="8.-진동-자극-제어">8. 진동 자극 제어<a class="anc" href="#8.-진동-자극-제어" title="링크">#</a></h2>
+<h3 id="8.1-파라미터">8.1 파라미터<a class="anc" href="#8.1-파라미터" title="링크">#</a></h3>
+<div class="tbl"><table><thead><tr><th>파라미터</th><th>범위</th><th>설정 id</th><th>기본</th><th>의미</th></tr></thead><tbody><tr><td>강도 pct</td><td>0~100 %</td><td><code>sInt</code> (수동 <code>mInt</code>)</td><td>60</td><td>10 kHz PWM 듀티 = 진폭</td></tr><tr><td>펄스 주파수</td><td>10~100 Hz, 10 단위</td><td><code>sFreq</code> (<code>mFreq</code>)</td><td>50</td><td>진동을 켜고 끄는 포락선 주파수. 0 = 연속</td></tr><tr><td>펄스 듀티</td><td>off / 20 / 40 / 60 / 80 / 100 %</td><td><code>sDuty</code> (<code>mDuty</code>)</td><td>100</td><td>주기 중 ON 비율. 100 = 연속(구형과 동일), off = 자극 없음</td></tr><tr><td>진동 On / 휴지 Off</td><td>1~60 s / 1~60 s</td><td><code>sOn</code> / <code>sOff</code></td><td>15 / 5</td><td>세트 안의 on/off 시간</td></tr><tr><td>세트 반복</td><td>1~30</td><td><code>sSets</code></td><td>9</td><td></td></tr><tr><td>중재 후 평가 중지</td><td>10~1800 s</td><td><code>sPause</code></td><td>300</td><td></td></tr><tr><td>진동 부위</td><td><code>large</code> / <code>small</code></td><td><code>sSide</code></td><td>large</td><td>비대칭 큰 쪽 / 작은 쪽 다리</td></tr></tbody></table></div>
+<h3 id="8.2-라우팅-규칙">8.2 라우팅 규칙<a class="anc" href="#8.2-라우팅-규칙" title="링크">#</a></h3>
+<ol>
+<li>개입 부호 <code>sign</code> → <code>side = LR(sign)</code>(좌/우).
+</li>
+<li><code>sSide === &#x27;large&#x27;</code> 이면 <code>vibSide = side</code>, <code>&#x27;small&#x27;</code> 이면 반대쪽.
+</li>
+<li><code>SIDE_ROLE = {좌:[&#x27;L&#x27;], 우:[&#x27;R&#x27;], 양쪽:[&#x27;L&#x27;,&#x27;R&#x27;]}</code> 로 대상 링크 결정.
+</li>
+<li>대상 링크가 연결돼 있으면 그 링크에, 미연결이면
+<ul>
+<li><code>sStimTorso</code>(설정 "몸통 모듈로 대체 자극", 기본 off)가 켜져 있고 몸통이 연결돼 있으면 몸통 링크에(경고 로그),
+</li>
+<li>아니면 <strong>자극 생략</strong>(경고 로그). 러닝 모드에서는 세트를 시작하지 않고 <code>wait</code> 로 감(5분 <code>pause</code> 로 가지 않음).
+</li></ul>
+</li>
+<li>명령: on = <code>Link.vib(pct, freq, duty)</code>, off = <code>Link.vib(0, 0, 0)</code>. <code>wait</code>/<code>pause</code>/정지/수동 정지 시에는 <strong>연결된 모든 링크</strong>에 off.
+</li></ol>
+<h3 id="8.3-link.vibpct-freq-duty">8.3 <code>Link.vib(pct, freq, duty)</code><a class="anc" href="#8.3-link.vibpct-freq-duty" title="링크">#</a></h3>
+<ol>
+<li>클램프: pct 0~100, freq 0~100, duty 0~100(미지정 100). <code>duty == 0</code> 이면 <code>pct = 0</code>.
+</li>
+<li><code>estopActive &amp;&amp; pct &gt; 0</code> → 무시.
+</li>
+<li>링크 <code>motorCmd = pct</code>(on 시작 시각 기록: 구형 E-Stop 추론용).
+</li>
+<li><code>caps.pulse</code>(Status ≥ 9 B) 이면 <code>[0x14, pct, freq, duty]</code>, 아니면 <code>[0x10, pct]</code>(펄스 요청인데 구형이면 1회 경고).
+</li></ol>
+<h3 id="8.4-e-stop">8.4 E-Stop<a class="anc" href="#8.4-e-stop" title="링크">#</a></h3>
+<ul>
+<li><code>estop(from)</code>: <code>estopActive = true</code>, 모든 링크 <code>motorCmd = 0</code>, 연결된 링크 전부에 <code>0x11 0x01</code>, 러닝·수동 정지, 배너 표시.
+</li>
+<li>발생원: 앱 긴급정지 버튼, 어느 모듈의 Status byte6 = 1(또는 구형 추론).
+</li>
+<li><code>clearEstop()</code>: 연결된 링크 전부에 <code>0x11 0x00</code>, <code>estopActive = false</code>, 배너 닫기. 러닝 시작·기준 측정 시작·수동 시작 때 항상 먼저 호출.
+</li></ul>
+<h3 id="8.5-수동-모드">8.5 수동 모드<a class="anc" href="#8.5-수동-모드" title="링크">#</a></h3>
+<div class="tbl"><table><thead><tr><th>id</th><th>기본</th><th>범위</th></tr></thead><tbody><tr><td><code>mOn</code></td><td>30 s</td><td>1~120</td></tr><tr><td><code>mOff</code></td><td>10 s</td><td>1~120</td></tr><tr><td><code>mMin</code></td><td>5 분</td><td>1~60</td></tr><tr><td><code>mInt</code> / <code>mFreq</code> / <code>mDuty</code></td><td>60 / 50 / 100</td><td>§8.1</td></tr><tr><td><code>mSide</code></td><td>양쪽</td><td>왼다리 / 오른다리 / 양쪽</td></tr></tbody></table></div>
+<p>시작 조건: 어느 링크든 연결. <code>mMin</code> 동안 (<code>mOn</code> 진동 → <code>mOff</code> 휴지) 반복. "누르는 동안 진동" 버튼은 누름/뗌에 on/off. 대상 링크가 없으면 상태줄에 "대상 없음" 표시.</p>
+<h3 id="8.6-안전-규칙-요약">8.6 안전 규칙 요약<a class="anc" href="#8.6-안전-규칙-요약" title="링크">#</a></h3>
+<ul>
+<li>펌웨어 워치독 130 s: 앱의 최대 on 구간(수동 120 s, 자동 60 s)보다 길게 잡혀 있으므로 정상 사용에서는 개입하지 않음. 앱은 on 구간을 이보다 길게 만들면 안 됨.
+</li>
+<li>앱이 백그라운드로 가서 타이머가 멈추면 off 를 못 보낼 수 있음(웹앱은 화면 유지 wake lock 사용). 네이티브 앱은 포그라운드 서비스 등으로 타이머를 보장할 것.
+</li>
+<li>링크 끊김 시 펌웨어가 스스로 정지하므로 앱은 재연결 후 상태만 복구하면 됨.
+</li></ul>
+<hr>
+<h2 id="9.-설정-항목-전체">9. 설정 항목 전체<a class="anc" href="#9.-설정-항목-전체" title="링크">#</a></h2>
+<p>설정 탭(<code>#p-set</code>) 입력의 id·기본값·범위. 모두 <code>mc.settings.v1</code> 에 저장·복원됩니다(§10.1). 복원 시 기기로는 아무것도 보내지 않습니다(<code>sMount</code>, <code>sAlgo</code> 포함).</p>
+<div class="tbl"><table><thead><tr><th>id</th><th>기본</th><th>범위/선택지</th><th>의미</th><th>영향</th></tr></thead><tbody><tr><td><code>sWin</code></td><td>15</td><td>3~40 s</td><td>검출 창</td><td>분석·판정기 만료·기준선 창 길이 검증</td></tr><tr><td><code>sOn</code></td><td>15</td><td>1~60 s</td><td>세트 내 진동 시간</td><td>상태기계 <code>stim</code></td></tr><tr><td><code>sOff</code></td><td>5</td><td>1~60 s</td><td>세트 내 휴지</td><td></td></tr><tr><td><code>sSets</code></td><td>9</td><td>1~30</td><td>세트 반복</td><td></td></tr><tr><td><code>sPause</code></td><td>300</td><td>10~1800 s</td><td>중재 후 평가 중지</td><td></td></tr><tr><td><code>sWait</code></td><td>10</td><td>5~300 s</td><td>검출 실패/미검출 시 대기</td><td>판정기 만료 시간에도 포함</td></tr><tr><td><code>sInt</code></td><td>60</td><td>0~100 %</td><td>진동 세기</td><td><code>0x14</code> pct</td></tr><tr><td><code>sFreq</code></td><td>50</td><td>10~100 Hz(10 단위)</td><td>펄스 주파수</td><td><code>0x14</code> Hz</td></tr><tr><td><code>sDuty</code></td><td>100</td><td>0/20/40/60/80/100</td><td>펄스 듀티</td><td><code>0x14</code> duty</td></tr><tr><td><code>sMetric</code></td><td><code>yaw_rate</code></td><td><code>yaw_rate</code> / <code>roll</code></td><td>비대칭 지표</td><td>엔진 metric, 기준선 키</td></tr><tr><td><code>sSide</code></td><td><code>large</code></td><td><code>large</code> / <code>small</code></td><td>진동 부위(큰 쪽/작은 쪽)</td><td>§8.2</td></tr><tr><td><code>sThr</code></td><td>15</td><td>0~60 %</td><td>절대 임계(기준선 없을 때)</td><td><code>absoluteDeviation</code></td></tr><tr><td><code>sLeanAxis</code></td><td>2</td><td>0 X / 1 Y / 2 Z</td><td>전방축(lean 회전축)</td><td><code>leanAxis</code>, 변경 시 lean 영점</td></tr><tr><td><code>sSignFlip</code></td><td>false</td><td></td><td>좌/우 표시 반전</td><td><code>LR()</code>, 스냅샷 표시</td></tr><tr><td><code>sStimTorso</code></td><td>false</td><td></td><td>다리 미연결 시 몸통 모터로 대체</td><td>§8.2</td></tr><tr><td><code>sMount</code></td><td>0</td><td>0/1/2/3</td><td>마운트 보정(오일러·3D 용)</td><td>변경 시 <code>0x12</code> 전송</td></tr><tr><td><code>sAlgo</code></td><td>1 (mahony)</td><td>0~3</td><td>융합 알고리즘</td><td>변경 시 <code>0x09</code> 전송(표시 <code>dvAlgo</code> 는 앱 선택값)</td></tr><tr><td><code>swZupt</code> / <code>swYaw</code></td><td>on / on</td><td>스위치(div, 저장 안 됨)</td><td>ZUPT / yaw 앵커-락</td><td>토글 시·연결 직후 <code>0x0B</code>/<code>0x0D</code></td></tr><tr><td>게이트 튜닝 카드</td><td>—</td><td><code>TUNE_PARAMS</code></td><td>GATE 오버라이드</td><td><code>mc.gate.override.v1</code>(§10.7)</td></tr></tbody></table></div>
+<p>기타 UI 설정: 실시간 차트 y 범위 <code>mc.ui.chRange</code>(lean 1~180°, rate 10~2000 dps 단계, auto 여부), 3D 뷰의 USB 위치 <code>usbPos</code>(표시용, 기본 <code>+x</code>).</p>
+<hr>
+<h2 id="10.-저장소와-데이터-형식">10. 저장소와 데이터 형식<a class="anc" href="#10.-저장소와-데이터-형식" title="링크">#</a></h2>
+<h3 id="10.1-localstorage-키">10.1 localStorage 키<a class="anc" href="#10.1-localstorage-키" title="링크">#</a></h3>
+<div class="tbl"><table><thead><tr><th>키</th><th>내용</th></tr></thead><tbody><tr><td><code>mc.settings.v1</code></td><td><code>{id: value}</code> — 설정 탭 input/select 값(체크박스는 bool). <code>tune*</code> 제외</td></tr><tr><td><code>mc.devices.v1</code></td><td><code>{T:{id,name}, L:{id,name}, R:{id,name}}</code> — 부위별 저장 모듈(<code>BluetoothDevice.id</code>, 표시 이름)</td></tr><tr><td><code>mc.baseline.v1.&lt;device&gt;.&lt;metric&gt;</code></td><td>기준선 JSON(§7.2)</td></tr><tr><td><code>mc.gate.override.v1</code></td><td>GATE 오버라이드 객체(§10.7)</td></tr><tr><td><code>mc.ui.chRange</code></td><td><code>{lean, rate, auto}</code> 차트 범위</td></tr></tbody></table></div>
+<p>모든 접근은 try/catch(사생활 모드·차단 시에도 동작). 웹앱은 origin 별로 분리되므로 PC/폰 간 공유는 JSON 내보내기/가져오기로 합니다.</p>
+<h3 id="10.2-로거-indexeddb-mclogger-v1">10.2 로거 IndexedDB <code>mc_logger</code> (v1)<a class="anc" href="#10.2-로거-indexeddb-mclogger-v1" title="링크">#</a></h3>
+<div class="tbl"><table><thead><tr><th>스토어</th><th>레코드</th></tr></thead><tbody><tr><td><code>chunks</code></td><td>`{kind:'ori'</td></tr><tr><td><code>events</code></td><td><code>{t(performance.now), wall, origin, kind, data}</code> — 기록 중이 아니어도 항상 저장(페이지를 다시 열어도 남음)</td></tr></tbody></table></div>
+<p>내보내기 시 다른 페이지 로드(origin 이 다름)의 레코드는 현재 페이지 시간축으로 옮기고(<code>t + origin − 현재 origin</code>), 이벤트는 wall 순으로 정렬합니다.</p>
+<h3 id="10.3-로그-내보내기-mclog1-gzip-json">10.3 로그 내보내기 <code>mclog/1</code> (gzip JSON)<a class="anc" href="#10.3-로그-내보내기-mclog1-gzip-json" title="링크">#</a></h3>
+<p>파일명 <code>mclog_&lt;몸통이름&gt;_&lt;yyyymmdd-HHMM&gt;.json.gz</code>.</p>
+<div class="tbl"><table><thead><tr><th>필드</th><th>내용</th></tr></thead><tbody><tr><td><code>schema</code></td><td><code>&#x27;mclog/1&#x27;</code></td></tr><tr><td><code>exportedAt</code></td><td>ISO</td></tr><tr><td><code>app</code></td><td><code>{build, engine, ua, url, perfOrigin}</code></td></tr><tr><td><code>device</code></td><td><code>{name: 몸통, L: 왼다리 이름 또는 null, R: …}</code></td></tr><tr><td><code>settings</code></td><td><code>LG.settingsSnapshot()</code> = 설정 탭 <code>{id: value}</code></td></tr><tr><td><code>gateOverride</code></td><td>현재 게이트 오버라이드</td></tr><tr><td><code>leanAxis</code>, <code>signFlip</code>, <code>bias</code>, <code>metric</code></td><td>당시 값</td></tr><tr><td><code>oriCols</code></td><td><code>[&#x27;t&#x27;,&#x27;roll&#x27;,&#x27;pitch&#x27;,&#x27;yaw&#x27;,&#x27;lean&#x27;,&#x27;qw&#x27;,&#x27;qx&#x27;,&#x27;qy&#x27;,&#x27;qz&#x27;]</code></td></tr><tr><td><code>rawCols</code></td><td><code>[&#x27;t&#x27;,&#x27;gx&#x27;,&#x27;gy&#x27;,&#x27;gz&#x27;,&#x27;ax&#x27;,&#x27;ay&#x27;,&#x27;az&#x27;]</code></td></tr><tr><td><code>events[]</code></td><td><code>{t, wall, kind, data}</code> (아래 표)</td></tr><tr><td><code>segments[]</code></td><td><code>{t0, t1, ori:[[t,…9]], raw:[[t,…7]]}</code> — 청크를 2 s 이내 간격으로 이어 붙인 연속 구간. t 는 0.1 ms, 각도 3자리, 쿼터니언·raw 4자리</td></tr><tr><td><code>captures[]</code></td><td>세션 캡처 요약 <code>{id, date, metric, winSec, marks, windows, expected, durSec, note, mode}</code> (샘플 제외)</td></tr></tbody></table></div>
+<p>이벤트 kind 와 data:</p>
+<div class="tbl"><table><thead><tr><th>kind</th><th>data</th></tr></thead><tbody><tr><td><code>app</code></td><td><code>{action:&#x27;load&#x27;, build, engine, ua, url, perfOrigin}</code></td></tr><tr><td><code>logger</code></td><td><code>{action:&#x27;start&#x27;, ua, build, engine, url, perfOrigin, connected, device, legs:{L,R}}</code> / <code>{action:&#x27;stop&#x27;, nOri, nRaw}</code> / <code>{action:&#x27;cleared&#x27;}</code></td></tr><tr><td><code>ble</code></td><td><code>{action:&#x27;connect&#x27;, role, name}</code> / <code>{action:&#x27;disconnect&#x27;, role, userDisc}</code></td></tr><tr><td><code>hz</code></td><td><code>{o:[5개], i:[5개]}</code> — 5 s 마다 1초 수신 개수(자세, raw)</td></tr><tr><td><code>state</code></td><td>`{sid:'rState'</td></tr><tr><td><code>window</code></td><td>창 결과 행(§10.5 와 같은 필드: t, t0, t1, state, reason, running, cadence, metric, method, si, signedSI, harmE, side, nPairs, trimmed, coverage, stepSpm, accRunning, baselineMu, delta, z, devHz)</td></tr><tr><td><code>bias</code></td><td><code>{bias:[3], stdG}</code></td></tr><tr><td><code>motor</code></td><td>`{link:'T'</td></tr><tr><td><code>capture</code></td><td>세션 캡처 요약</td></tr><tr><td><code>setting</code></td><td><code>{id, value}</code></td></tr><tr><td><code>gate</code></td><td><code>{over}</code> 게이트 오버라이드 적용</td></tr><tr><td><code>tag</code></td><td>`{label, action:'start'</td></tr><tr><td><code>note</code></td><td><code>{text}</code></td></tr><tr><td><code>log</code></td><td><code>{m, c}</code> 화면 로그 줄(c: <code>tx</code>/<code>rx</code>/<code>er</code>)</td></tr><tr><td><code>error</code></td><td><code>{msg, src?, line?}</code></td></tr><tr><td><code>visibility</code></td><td><code>{state}</code></td></tr></tbody></table></div>
+<h3 id="10.4-캡처-json-schema-1">10.4 캡처 JSON (schema 1)<a class="anc" href="#10.4-캡처-json-schema-1" title="링크">#</a></h3>
+<p>세션 캡처(러닝/기준 측정 시작→정지, "💾 JSON 저장"), 창 JSON, 로그 분할(<code>logtool.py split</code>)이 같은 형식입니다.</p>
+<div class="tbl"><table><thead><tr><th>필드</th><th>내용</th></tr></thead><tbody><tr><td><code>schema</code></td><td>1</td></tr><tr><td><code>kind</code></td><td><code>&#x27;session&#x27;</code> / <code>&#x27;window&#x27;</code> / <code>&#x27;log&#x27;</code></td></tr><tr><td><code>id</code>, <code>engine</code>, <code>date</code>, <code>device</code>, <code>metric</code>, <code>winSec</code>, <code>leanAxis</code>, <code>signFlip</code>, <code>bias</code>, <code>note</code>, <code>mode</code>(<code>run</code>/<code>baseline</code>/<code>log</code>)</td><td>메타</td></tr><tr><td><code>marks</code></td><td><code>{start, detect, stop}</code> (ms, 캡처 시간축). start 는 러닝 시작 시각, 사전구간 3 s 가 그 앞에 있음</td></tr><tr><td><code>windows[]</code></td><td><code>{t0, t1, state, reason, si, signedSI, strideHz, nPairs, E, coverage, stepSpm, running, devHz, mode}</code> — 앱이 실시간으로 낸 창 판정</td></tr><tr><td><code>ori[]</code></td><td><code>[t, roll, yaw, lean, [ux,uy,uz]]</code></td></tr><tr><td><code>raw[]</code></td><td><code>[t, gx, gy, gz, ax, ay, az]</code></td></tr><tr><td><code>expected</code></td><td>정지 직전 마지막 창의 R 요약(<code>state, reason, si, signedSI, strideHz, nPairs, nLobes, E, coverage, stepSpm, meanOffset, std, running, runSrc, srcYaw</code>)</td></tr><tr><td><code>durSec</code></td><td>길이</td></tr></tbody></table></div>
+<p>재생 규칙: 같은 <code>t0/t1</code> 로 <code>analyzeRange</code> 를 돌리면 실시간 결과와 일치해야 합니다(셀프테스트 X 섹션·미러가 검증).</p>
+<h3 id="10.5-비대칭-로그-csv-열-순서">10.5 비대칭 로그 CSV (열 순서)<a class="anc" href="#10.5-비대칭-로그-csv-열-순서" title="링크">#</a></h3>
+<p><code>time_iso, running, cadence_hz, metric, method, si_pct, harm_e, side, asym_pct, state, reason, n_pairs, signed_si, trimmed, e_pct, baseline_mu, delta, z, acc_running, step_spm, coverage, dev_hz</code> (<code>method</code> = 엔진 버전, <code>asym_pct</code> = <code>si_pct</code> 와 동일(호환), 빈 값 = 해당 없음)</p>
+<h3 id="10.6-기준선-json-파일">10.6 기준선 JSON 파일<a class="anc" href="#10.6-기준선-json-파일" title="링크">#</a></h3>
+<p><code>baseline_&lt;device&gt;_&lt;metric&gt;_&lt;yyyy-mm-dd&gt;.json</code> = §7.2 객체 그대로. 가져오기는 현재 지표·창 길이와 일치해야 합니다.</p>
+<h3 id="10.7-게이트-오버라이드-mc.gate.override.v1">10.7 게이트 오버라이드 (<code>mc.gate.override.v1</code>)<a class="anc" href="#10.7-게이트-오버라이드-mc.gate.override.v1" title="링크">#</a></h3>
+<p><code>{winSec, acc:{enterStdG, …}, stationaryMaxFrac, …}</code> 처럼 GATE 와 같은 경로. 튜닝 카드가 노출하는 파라미터: <code>winSec, acc.enterStdG, acc.exitStdG, acc.minStrength, acc.blockFrac, acc.stepMin, acc.stepMax, stationaryMaxFrac, minStrength, minRateStd, minAngleStd, rampRatio, turnMeanDps, turnSegDps, lobeK, minPairs, pairMin, pairMax, siCapPct</code>. "적용"은 라이브 엔진에 즉시 반영, "저장"은 다음 로드에서도 적용.</p>
+<hr>
+<h2 id="11.-화면-표시-규칙참고">11. 화면 표시 규칙(참고)<a class="anc" href="#11.-화면-표시-규칙참고" title="링크">#</a></h2>
+<div class="tbl"><table><thead><tr><th>표시</th><th>규칙</th></tr></thead><tbody><tr><td>수신 Hz</td><td>1 s 마다 Orientation/IMU 알림 개수(정상 ≈50/50)</td></tr><tr><td>러닝감지(라이브)</td><td><code>RawEngine.tick</code> 1 s 마다: 러닝 ✓/비러닝, std g, spm, 주기성</td></tr><tr><td>상태줄</td><td><code>rState</code>(러닝) / <code>mState</code>(수동): 상태 + 부제(사유·세트·부위·파라미터)</td></tr><tr><td>비대칭 게이지</td><td><code>si/2</code> %(최대 50 %), 좌는 왼쪽 채움</td></tr><tr><td>스냅샷</td><td>세션 전체 개요(창 판정 밴드) 또는 창별 파형 + 로브 극값(짝 파랑/주황, 그 외 회색)</td></tr><tr><td>연결 카드</td><td>부위별 행: 이름, 상태(연결됨·배터리·펄스 지원/구형), 버튼</td></tr><tr><td>헤더</td><td><code>몸통✓ 왼– 오른–</code> 요약, 몸통 배터리</td></tr></tbody></table></div>
+<hr>
+<h2 id="12.-개발검증-도구">12. 개발·검증 도구<a class="anc" href="#12.-개발검증-도구" title="링크">#</a></h2>
+<div class="tbl"><table><thead><tr><th>도구</th><th>용도</th></tr></thead><tbody><tr><td><code>motioncue_app.html#demo</code></td><td>합성 세션 캡처로 캡처·스냅샷·튜닝 경로 점검(BLE 없음)</td></tr><tr><td><code>#sim</code> / <code>#logsim</code></td><td>합성 50 Hz 알림으로 러닝 시작→창 2개→정지, 다리 링크 스텁으로 <code>0x14</code> 라우팅 검사(<code>document.title</code> 에 <code>stim=ok</code>), 로거 export/import 왕복</td></tr><tr><td><code>tests/asym_selftest.html</code></td><td>엔진 셀프테스트(합성·실측 골든, 88 케이스)</td></tr><tr><td><code>tests/asym_mirror.py</code></td><td>엔진 Python 미러: <code>--selftest</code>, <code>--replay &lt;capture.json&gt; --hop 5</code>(앱 기록 창과 재생 비교)</td></tr><tr><td><code>tests/logtool.py</code></td><td><code>info / windows / events / split</code> (mclog → 캡처 JSON)</td></tr><tr><td><code>tests/make_real_vectors.py</code></td><td>실측 골든 갱신</td></tr></tbody></table></div>
+<hr>
+<h2 id="13.-네이티브-앱-구현-체크리스트">13. 네이티브 앱 구현 체크리스트<a class="anc" href="#13.-네이티브-앱-구현-체크리스트" title="링크">#</a></h2>
+<ol>
+<li><strong>스캔·연결</strong>: 이름 접두어 <code>MotionCue</code>. 부위별로 사용자에게 선택받아 ID 저장. 연결 후 §3.1 순서로 구독(다리는 Orientation/IMU 를 요청하지 않음). 연결 파라미터 요청은 펌웨어가 하므로 앱은 수용만.
+</li>
+<li><strong>디코딩</strong>: §2.3/§2.4 스케일. 쿼터니언 → up 공식의 부호를 그대로 사용. 각 프레임에 도착 시각을 붙임.
+</li>
+<li><strong>lean/yaw_rate</strong>: 서기 시 up 기준 저장 → <code>leanAbout</code>; 창 평균 가속도 방향 → <code>yawRate</code>. bias 는 서기 3 s 평균(정지 조건).
+</li>
+<li><strong>버퍼·리샘플</strong>: 45 s 링버퍼, <code>dEff</code> 추정, de-burst, 50 Hz 선형 보간, flagged.
+</li>
+<li><strong>엔진</strong>: §5.1 상수와 §5.2 순서를 그대로. 결과는 <code>state/reason</code> 계약. 실측 골든(<code>tests/real/*.json</code>)으로 같은 결과가 나오는지 확인.
+</li>
+<li><strong>상태기계·판정기</strong>: §6, §7.3. 만료 시간 <code>(2·win + wait)</code>. 기준선 JSON 은 §7.2 형식으로 호환 유지.
+</li>
+<li><strong>자극</strong>: §8. 대상 미연결 시 생략·경고. <code>0x14</code> 는 Status ≥ 9 B 일 때만, 아니면 <code>0x10</code>. off 는 모든 링크에. 시작 전 <code>0x11 0x00</code>.
+</li>
+<li><strong>E-Stop</strong>: 어느 모듈의 Status byte6 이든 1 이면 전체 정지 + 모든 링크 <code>0x11 0x01</code>.
+</li>
+<li><strong>끊김</strong>: 몸통 끊김 = 세션 정지, 다리 끊김 = 대상이면 자극 중단·세션 계속. 자동 재연결.
+</li>
+<li><strong>로그</strong>: 가능하면 <code>mclog/1</code> 과 캡처 JSON 을 그대로 써서 PC 도구(<code>logtool.py</code>, 미러, 셀프테스트)와 호환.
+</li>
+<li><strong>백그라운드</strong>: 타이머가 멈추지 않게(포그라운드 서비스). 펌웨어 워치독 130 s 는 최후 보호.
+</li></ol>
+<hr>
+<h2 id="부록-a.-단위부호-규약-요약">부록 A. 단위·부호 규약 요약<a class="anc" href="#부록-a.-단위부호-규약-요약" title="링크">#</a></h2>
+<div class="tbl"><table><thead><tr><th>항목</th><th>규약</th></tr></thead><tbody><tr><td>쿼터니언</td><td>w,x,y,z, 센서→월드, Q14</td></tr><tr><td>up(센서좌표)</td><td><code>[2(xz−wy), 2(yz+wx), 1−2(x²+y²)]</code> 정규화</td></tr><tr><td>lean</td><td>전방축 둘레 회전각, 서기 기준 0</td></tr><tr><td>yaw_rate</td><td><code>dot(g − bias, up_acc)</code>, 양수 = 위에서 볼 때 반시계</td></tr><tr><td>signedSI</td><td><code>(L−R)/(L+R)·100</code>, 양(+) 로브 = 좌(잠정, <code>sSignFlip</code> 로 반전)</td></tr><tr><td>시간</td><td>앱 도착 시각 ms(performance.now), 캡처/로그도 같은 축. 벽시계는 <code>wall</code>(Date.now)</td></tr></tbody></table></div>
+<h2 id="부록-b.-예시-바이트">부록 B. 예시 바이트<a class="anc" href="#부록-b.-예시-바이트" title="링크">#</a></h2>
+<div class="tbl"><table><thead><tr><th>목적</th><th>쓰기(hex)</th></tr></thead><tbody><tr><td>E-Stop 해제</td><td><code>11 00</code></td></tr><tr><td>heading 재영점</td><td><code>0E 01</code></td></tr><tr><td>연속 진동 60 %</td><td><code>14 3C 00 64</code> (구형: <code>10 3C</code>)</td></tr><tr><td>60 %, 50 Hz, 40 % 듀티</td><td><code>14 3C 32 28</code></td></tr><tr><td>정지</td><td><code>14 00 00 00</code></td></tr><tr><td>identify 버즈</td><td><code>13</code></td></tr><tr><td>마운트 +90°</td><td><code>12 01</code></td></tr><tr><td>ZUPT off</td><td><code>0B 00</code></td></tr></tbody></table></div>
+</main>
+<a class="totop" href="#top" onclick="window.scrollTo({top:0});return false">▲ 맨 위로</a>
+<script>
+(function(){
+  const q=document.getElementById('q'), cnt=document.getElementById('cnt'), nav=document.getElementById('nav'), main=document.getElementById('main');
+  const links=[...nav.querySelectorAll('a')], heads=[...main.querySelectorAll('h2,h3')];
+  function unmark(){ main.querySelectorAll('mark').forEach(m=>{ const t=document.createTextNode(m.textContent); m.replaceWith(t); }); main.normalize(); }
+  function markAll(term){ let n=0; const walker=document.createTreeWalker(main, NodeFilter.SHOW_TEXT, {acceptNode:t=>(t.parentNode.closest('script,style')||!t.nodeValue.trim())?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});
+    const nodes=[]; while(walker.nextNode()) nodes.push(walker.currentNode);
+    const re=new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
+    for(const t of nodes){ const s=t.nodeValue; if(!re.test(s)) continue; re.lastIndex=0; const frag=document.createDocumentFragment(); let last=0, m;
+      while((m=re.exec(s))){ frag.appendChild(document.createTextNode(s.slice(last,m.index))); const mk=document.createElement('mark'); mk.textContent=m[0]; frag.appendChild(mk); last=m.index+m[0].length; n++; }
+      frag.appendChild(document.createTextNode(s.slice(last))); t.replaceWith(frag); }
+    return n; }
+  let tmr=null;
+  q.addEventListener('input', ()=>{ clearTimeout(tmr); tmr=setTimeout(()=>{ const term=q.value.trim().toLowerCase(); unmark();
+    links.forEach(a=>a.classList.toggle('hide', !!term && !a.dataset.t.includes(term)));
+    if(term.length<2){ cnt.textContent=''; return; }
+    const n=markAll(term); cnt.textContent=n? n+'곳' : '없음'; const first=main.querySelector('mark'); if(first) first.scrollIntoView({block:'center'}); }, 150); });
+  q.addEventListener('keydown', e=>{ if(e.key==='Escape'){ q.value=''; q.dispatchEvent(new Event('input')); } });
+  // 현재 위치 목차 강조
+  const io=new IntersectionObserver(es=>{ es.forEach(e=>{ if(e.isIntersecting){ links.forEach(a=>a.classList.toggle('cur', a.getAttribute('href')==='#'+e.target.id)); } }); }, {rootMargin:'-60px 0px -75% 0px'});
+  heads.forEach(h=>io.observe(h));
+  nav.addEventListener('click', e=>{ if(e.target.tagName==='A' && window.innerWidth<=900) nav.classList.remove('open'); });
+})();
+</script>
+</body></html>

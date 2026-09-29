@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="20260928-1445">
+<meta name="build" content="20260929-1501">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>MotionCue-R 테스터</title>
 <style>
@@ -374,6 +374,7 @@
         <div class="b"><div class="n">az</div><div class="v" id="az" style="font-size:15px">–</div></div>
       </div>
       <div class="hint mt">IMU Data(0xf001) 구독 <span id="imuSub">off</span> · <button class="btn-g" style="padding:5px 10px" onclick="toggleImu()">구독 토글</button></div>
+      <div class="hint">프로토콜·설정·데이터 형식 참조: <a href="api.html" target="_blank" rel="noopener" style="color:var(--pri)">API 설명서(위키)</a> · <a href="API.md" target="_blank" rel="noopener" style="color:var(--pri)">API.md</a></div>
     </div>
     <div class="card">
       <h3 style="margin-top:0">명령</h3>
@@ -402,7 +403,7 @@
   <button data-p="dev" onclick="tab('dev')"><span class="ni">🔧</span>개발</button>
 </nav>
 
-<script src="asym_engine.js?v=20260928-1445"></script>
+<script src="asym_engine.js?v=20260929-1501"></script>
 <script>
 // ===================== BLE 계층 =====================
 const UUID = {
